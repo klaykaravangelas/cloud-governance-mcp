@@ -1,0 +1,43 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": false,
+  "errored": true,
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket.new",
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "new",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "no-op"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {},
+        "importing": {
+          "id": "SENTINEL_IMPORT_SECRET"
+        }
+      }
+    }
+  ],
+  "deferred_changes": [
+    {
+      "opaque": "SENTINEL_DEFERRED_SECRET"
+    },
+    null
+  ],
+  "resource_drift": [
+    {
+      "opaque": "SENTINEL_DRIFT_SECRET"
+    }
+  ],
+  "output_changes": {
+    "secret": {
+      "after": "SENTINEL_PARTIAL_OUTPUT_SECRET"
+    }
+  }
+}

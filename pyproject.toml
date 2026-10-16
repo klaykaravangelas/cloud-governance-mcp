@@ -1,0 +1,51 @@
+[project]
+name = "cloud-governance-mcp"
+version = "0.1.0.dev0"
+description = "Read-only Terraform plan analysis and cloud governance through MCP."
+readme = "README.md"
+requires-python = ">=3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+    "anyio>=4.15.1,<5",
+    "mcp>=2.3.0,<3",
+    "pydantic>=2.14.1,<3",
+]
+
+[project.scripts]
+cloud-governance-mcp = "cloud_governance_mcp.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.14,<1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.18,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "README.md" },
+    { file = "src/**/*.py" },
+]
+
+[tool.uv.build-backend]
+module-name = "cloud_governance_mcp"
+module-root = "src"
+source-include = ["tests/**", "examples/**", "docs/**", "AGENTS.md", ".python-version", "uv.lock"]
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers", "-ra"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

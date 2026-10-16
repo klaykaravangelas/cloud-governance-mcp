@@ -1,0 +1,43 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_db_instance.example",
+      "mode": "managed",
+      "type": "aws_db_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "storage_encrypted": false,
+          "identifier": "synthetic-database"
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_db_instance.example",
+          "mode": "managed",
+          "type": "aws_db_instance",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "storage_encrypted": false,
+            "identifier": "synthetic-database"
+          }
+        }
+      ]
+    }
+  }
+}

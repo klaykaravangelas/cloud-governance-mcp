@@ -1,0 +1,102 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_db_instance.masked",
+      "mode": "managed",
+      "type": "aws_db_instance",
+      "name": "masked",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "password": "SENTINEL_BEFORE_SECRET"
+        },
+        "after": {
+          "credentials": {
+            "token": "SENTINEL_MARKED_SECRET"
+          },
+          "description": "SENTINEL_UNMARKED_SECRET"
+        },
+        "after_unknown": {
+          "endpoints": [
+            false,
+            {
+              "address": true
+            }
+          ],
+          "identifier": true
+        },
+        "after_sensitive": {
+          "credentials": true
+        },
+        "before_sensitive": {
+          "password": true
+        }
+      }
+    },
+    {
+      "address": "terraform_data.whole",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "whole",
+      "provider_name": "terraform.io/builtin/terraform",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": true,
+        "after_sensitive": true
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_db_instance.masked",
+          "mode": "managed",
+          "type": "aws_db_instance",
+          "name": "masked",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "credentials": {
+              "token": "SENTINEL_INVENTORY_SECRET"
+            }
+          },
+          "sensitive_values": {
+            "credentials": {
+              "token": true
+            }
+          }
+        },
+        {
+          "address": "terraform_data.whole",
+          "mode": "managed",
+          "type": "terraform_data",
+          "name": "whole",
+          "provider_name": "terraform.io/builtin/terraform"
+        }
+      ]
+    }
+  },
+  "variables": {
+    "password": {
+      "value": "SENTINEL_VARIABLE_SECRET"
+    }
+  },
+  "output_changes": {
+    "password": {
+      "after": "SENTINEL_OUTPUT_SECRET"
+    }
+  },
+  "unknown_additive": {
+    "SENTINEL_ADDITIVE_KEY": "SENTINEL_ADDITIVE_SECRET"
+  }
+}

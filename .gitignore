@@ -218,3 +218,23 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local Terraform working files and plan/state artifacts.
+# Keep .terraform.lock.hcl versioned when provider-based examples need it.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+
+# Put personal exported plan JSON here; synthetic fixtures/reports stay tracked.
+/local-plans/
+
+# Local environment variants and macOS metadata.
+.env.*
+!.env.example
+.DS_Store

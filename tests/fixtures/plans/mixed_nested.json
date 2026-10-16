@@ -1,0 +1,167 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket.new",
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "new",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_security_group.web",
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "web",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_instance.old",
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "old",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "delete"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "module.database.module.storage[\"a.b\"].aws_db_instance.example[0]",
+      "mode": "managed",
+      "type": "aws_db_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "index": 0,
+      "change": {
+        "actions": [
+          "delete",
+          "create"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_instance.stable",
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "stable",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "no-op"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "data.aws_ami.base",
+      "mode": "data",
+      "type": "aws_ami",
+      "name": "base",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "read"
+        ],
+        "before": null,
+        "after": {},
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.new",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "new",
+          "provider_name": "registry.terraform.io/hashicorp/aws"
+        },
+        {
+          "address": "aws_security_group.web",
+          "mode": "managed",
+          "type": "aws_security_group",
+          "name": "web",
+          "provider_name": "registry.terraform.io/hashicorp/aws"
+        },
+        {
+          "address": "aws_instance.stable",
+          "mode": "managed",
+          "type": "aws_instance",
+          "name": "stable",
+          "provider_name": "registry.terraform.io/hashicorp/aws"
+        },
+        {
+          "address": "data.aws_ami.base",
+          "mode": "data",
+          "type": "aws_ami",
+          "name": "base",
+          "provider_name": "registry.terraform.io/hashicorp/aws"
+        },
+        {
+          "address": "google_storage_bucket.archive[\"a.b\"]",
+          "mode": "managed",
+          "type": "google_storage_bucket",
+          "name": "archive",
+          "provider_name": "registry.terraform.io/hashicorp/google",
+          "index": "a.b"
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.database",
+          "child_modules": [
+            {
+              "address": "module.database.module.storage[\"a.b\"]",
+              "resources": [
+                {
+                  "address": "module.database.module.storage[\"a.b\"].aws_db_instance.example[0]",
+                  "mode": "managed",
+                  "type": "aws_db_instance",
+                  "name": "example",
+                  "provider_name": "registry.terraform.io/hashicorp/aws",
+                  "index": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

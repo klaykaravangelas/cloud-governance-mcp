@@ -1,0 +1,144 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "analysis_status": "partial",
+  "summary": {
+    "total_resources": 7,
+    "changing_resources": 4,
+    "by_action": {
+      "create": 1,
+      "update": 1,
+      "delete": 1,
+      "replace": 1,
+      "no_op": 1,
+      "read": 1,
+      "unreported": 1
+    },
+    "by_type": {
+      "aws_ami": 1,
+      "aws_db_instance": 1,
+      "aws_instance": 2,
+      "aws_s3_bucket": 1,
+      "aws_security_group": 1,
+      "google_storage_bucket": 1
+    },
+    "by_mode": {
+      "managed": 6,
+      "data": 1
+    }
+  },
+  "resources": [
+    {
+      "address": "aws_instance.old",
+      "resource_type": "aws_instance",
+      "name": "old",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "module_address": null,
+      "index": null,
+      "previous_address": null,
+      "actions": [
+        "delete"
+      ],
+      "action_category": "delete",
+      "source": "resource_changes"
+    },
+    {
+      "address": "aws_instance.stable",
+      "resource_type": "aws_instance",
+      "name": "stable",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "module_address": null,
+      "index": null,
+      "previous_address": null,
+      "actions": [
+        "no-op"
+      ],
+      "action_category": "no_op",
+      "source": "both"
+    },
+    {
+      "address": "aws_s3_bucket.new",
+      "resource_type": "aws_s3_bucket",
+      "name": "new",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "module_address": null,
+      "index": null,
+      "previous_address": null,
+      "actions": [
+        "create"
+      ],
+      "action_category": "create",
+      "source": "both"
+    },
+    {
+      "address": "aws_security_group.web",
+      "resource_type": "aws_security_group",
+      "name": "web",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "module_address": null,
+      "index": null,
+      "previous_address": null,
+      "actions": [
+        "update"
+      ],
+      "action_category": "update",
+      "source": "both"
+    },
+    {
+      "address": "data.aws_ami.base",
+      "resource_type": "aws_ami",
+      "name": "base",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "data",
+      "module_address": null,
+      "index": null,
+      "previous_address": null,
+      "actions": [
+        "read"
+      ],
+      "action_category": "read",
+      "source": "both"
+    },
+    {
+      "address": "google_storage_bucket.archive[\"a.b\"]",
+      "resource_type": "google_storage_bucket",
+      "name": "archive",
+      "provider_name": "registry.terraform.io/hashicorp/google",
+      "mode": "managed",
+      "module_address": null,
+      "index": "a.b",
+      "previous_address": null,
+      "actions": [],
+      "action_category": "unreported",
+      "source": "planned_values"
+    },
+    {
+      "address": "module.database.module.storage[\"a.b\"].aws_db_instance.example[0]",
+      "resource_type": "aws_db_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "module_address": "module.database.module.storage[\"a.b\"]",
+      "index": 0,
+      "previous_address": null,
+      "actions": [
+        "delete",
+        "create"
+      ],
+      "action_category": "replace",
+      "source": "both"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "CHANGE_ACTIONS_UNREPORTED",
+      "message": "Some inventory resources have no reported actions.",
+      "count": 1
+    }
+  ]
+}
