@@ -238,3 +238,6 @@ crash.*.log
 .env.*
 !.env.example
 .DS_Store
+
+# Pinned local development executables; never publish downloaded binaries.
+/.tools/

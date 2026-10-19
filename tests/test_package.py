@@ -49,6 +49,13 @@ def test_core_contracts_import_without_loading_mcp(tmp_path: Path) -> None:
             "import cloud_governance_mcp.adapters.terraform; "
             "import cloud_governance_mcp.analysis; "
             "import cloud_governance_mcp.service; "
+            "import cloud_governance_mcp.evaluation_models; "
+            "import cloud_governance_mcp.evaluation_errors; "
+            "import cloud_governance_mcp.catalog; "
+            "import cloud_governance_mcp.projection; "
+            "import cloud_governance_mcp.engine.opa; "
+            "import cloud_governance_mcp.reporting; "
+            "import cloud_governance_mcp.evaluation_service; "
             "assert not any(name == 'mcp' or name.startswith('mcp.') "
             "for name in sys.modules)",
         ],

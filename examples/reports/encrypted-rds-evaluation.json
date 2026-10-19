@@ -1,0 +1,43 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "evaluation_status": "complete",
+  "compliance_status": "pass",
+  "selected_policy_ids": [
+    "AWS-RDS-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "policy_version": "1.0.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_db_instance"
+      ],
+      "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved."
+    }
+  ],
+  "findings": [],
+  "indeterminate_checks": [],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 1,
+    "candidate_resources": 1,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 1,
+    "evaluated_checks": 1,
+    "unevaluated_checks": 0,
+    "applicable_checks": 1,
+    "passed": 1,
+    "failed": 0,
+    "indeterminate": 0,
+    "not_applicable": 0
+  }
+}

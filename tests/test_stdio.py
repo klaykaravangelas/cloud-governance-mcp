@@ -53,7 +53,10 @@ async def test_real_sdk_stdio_discovery_analysis_safe_errors_and_shutdown(
             stdio_client(parameters, errlog=stderr), mode=mode, read_timeout_seconds=5
         ) as client:
             discovery = await client.list_tools()
-            assert [tool.name for tool in discovery.tools] == [TOOL_NAME]
+            assert [tool.name for tool in discovery.tools] == [
+                TOOL_NAME,
+                "evaluate_terraform_policies",
+            ]
             tool = discovery.tools[0]
             assert tool.input_schema["additionalProperties"] is False
             assert tool.output_schema is not None
@@ -148,7 +151,10 @@ async def test_raw_stdio_frames_have_safe_pre_handler_errors_and_protocol_only_s
         assert "tools" in initialized["result"]["capabilities"]
         await send({"jsonrpc": "2.0", "method": "notifications/initialized"})
         listing = await exchange(2, "tools/list", {})
-        assert [tool["name"] for tool in listing["result"]["tools"]] == [TOOL_NAME]
+        assert [tool["name"] for tool in listing["result"]["tools"]] == [
+            TOOL_NAME,
+            "evaluate_terraform_policies",
+        ]
 
         # These fail protocol validation before our handler. The SDK must use its
         # fixed INVALID_PARAMS response, never Pydantic excerpts or input keys.

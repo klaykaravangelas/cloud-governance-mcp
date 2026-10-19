@@ -51,6 +51,19 @@ def test_repeatable_roots_and_all_limits_preserve_operator_settings(
         ["--allowed-root", "/tmp", "--max-json-depth", "-1"],
         ["--allowed-root", "/tmp", "--max-analysis-bytes", "0"],
         ["--allowed-r", "/tmp"],
+        ["--allowed-root", "/tmp", "--opa-path", "SENTINEL_RELATIVE"],
+        ["--allowed-root", "/tmp", "--max-opa-input-bytes", "0"],
+        ["--allowed-root", "/tmp", "--max-opa-output-bytes", "SENTINEL_INVALID"],
+        ["--allowed-root", "/tmp", "--max-opa-stderr-bytes", "0"],
+        ["--allowed-root", "/tmp", "--max-evaluation-bytes", "-1"],
+        [
+            "--allowed-root",
+            "/tmp",
+            "--opa-eval-timeout-seconds",
+            "10",
+            "--opa-process-timeout-seconds",
+            "10",
+        ],
     ],
 )
 def test_argument_failures_have_fixed_diagnostics(

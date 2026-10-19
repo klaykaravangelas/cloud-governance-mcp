@@ -28,7 +28,8 @@ Expected output:
 
 ```json
 [
-  "analyze_terraform_plan"
+  "analyze_terraform_plan",
+  "evaluate_terraform_policies"
 ]
 ```
 
@@ -36,7 +37,9 @@ Expected output:
 environment, connects through the official MCP SDK, and lists its tools. It
 explicitly authorizes `tests/fixtures/plans` as the server's allowed root. This
 default belongs to the example client; the server itself has no default root.
-Evaluation and policy listing are not implemented yet.
+Evaluation now supports one standalone RDS policy; it requires separate OPA
+configuration. This analysis walkthrough still needs no OPA. Policy listing
+remains planned. See [evaluation](trying-evaluation.md) when ready.
 
 ## 3. Analyze the mixed plan
 

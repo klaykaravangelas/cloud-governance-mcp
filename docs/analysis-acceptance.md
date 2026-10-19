@@ -1,5 +1,10 @@
 # Analysis increment acceptance evidence
 
+Historical record for the original one-tool analysis increment. Specification 002
+subsequently adds evaluation and intentionally changes discovery to two tools;
+the analysis schema, report and OPA-independent behavior remain intact. See
+[current evaluation evidence](evaluation-acceptance.md).
+
 Verified 2026-10-16 on macOS arm64, Python 3.14.7. Tasks A1–A7 complete
 [Specification 001](specifications/analyze-terraform-plan.md). This is the first
 analysis increment toward v0.1, not the complete three-tool governance MVP.

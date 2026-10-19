@@ -30,6 +30,8 @@ cache-keys = [
     { file = "pyproject.toml" },
     { file = "README.md" },
     { file = "src/**/*.py" },
+    { file = "src/cloud_governance_mcp/policies/**/*.json" },
+    { file = "src/cloud_governance_mcp/policies/**/*.rego" },
 ]
 
 [tool.uv.build-backend]

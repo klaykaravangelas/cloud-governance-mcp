@@ -1,15 +1,42 @@
 # cloud-governance-mcp
 
-A read-only MCP server that explains proposed Terraform infrastructure changes.
-It reads an existing plan JSON file and returns resource identities, action/type/
-mode counts, and coverage warnings through `analyze_terraform_plan`.
+An open-source Model Context Protocol (MCP) server for cloud infrastructure
+governance. The project is being built to help AI assistants inspect infrastructure,
+evaluate governance policies, and explain security and compliance findings.
 
-**Status:** the first analysis increment (A1–A7) is complete. **521 tests pass**,
-including real MCP stdio and example-client tests. Package version is
-`0.1.0.dev0`; the full three-tool v0.1 governance MVP remains in progress.
-OPA/Rego policy evaluation is the next development increment.
+The initial focus is Terraform plan JSON, with policy-as-code using Open Policy
+Agent (OPA) and Rego. The architecture separates MCP interfaces from
+the governance engine so future adapters can support read-only AWS inspection.
+The project demonstrates platform engineering, infrastructure security,
+policy-as-code, and MCP integration through small, tested increments.
 
-## Try it locally
+## Tools and project scope
+
+The v0.1 target has three complementary tools:
+
+| Tool | Purpose | Status |
+| --- | --- | --- |
+| `analyze_terraform_plan` | Explain proposed changes through resource identities, action/type/mode counts, and coverage warnings. | Implemented |
+| `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; standalone RDS encryption (AWS-RDS-001) |
+| `list_policies` | Describe the implemented governance policies and their severity classifications. | Planned; follows evaluation |
+
+The first policy checks standalone RDS storage encryption. Planned coverage adds
+RDS clusters, unrestricted SSH ingress, mandatory resource tags and S3 public
+access protection. Only the implemented RDS policy is selectable today.
+
+Analysis explains changes; evaluation adds compliance decisions; policy
+listing will describe the available rules. AWS connectivity is a later milestone.
+
+## Current status
+
+Terraform plan analysis is available locally over stdio. The first analysis
+increment (A1–A7) is complete, with real MCP client/server tests, synthetic plans,
+and a hands-on walkthrough. Package version is `0.1.0.dev0`; the full three-tool
+v0.1 governance MVP remains in progress. Evaluation is available with pinned OPA
+1.21.2; policy listing remains planned. Both tools operate locally without AWS
+credentials or Terraform. Analysis needs no OPA configuration or installation.
+
+## Try the analysis tool locally
 
 From the repository directory, with uv installed:
 
@@ -19,7 +46,7 @@ uv run --locked --no-editable python examples/client.py --list-tools
 uv run --locked --no-editable python examples/client.py
 ```
 
-The first call lists `analyze_terraform_plan`. The second analyzes our synthetic
+The first call lists both implemented tools. The second analyzes our synthetic
 mixed plan: **7 resources, 4 managed changes**, and `partial` coverage because
 one inventory resource has no reported action. Compare the
 [input plan](tests/fixtures/plans/mixed_nested.json) with the
@@ -32,6 +59,21 @@ installation may need internet access; analysis itself is local.
 Follow the [hands-on walkthrough](docs/trying-analysis.md) to understand the report,
 try other fixtures and safe failures, supply your own plan, and connect an MCP
 host. The [client source](examples/client.py) shows the official SDK calls.
+
+## Try policy evaluation
+
+Follow [OPA setup](docs/opa-setup.md) to install and checksum-verify the pinned
+local binary. Then evaluate the synthetic unencrypted RDS plan:
+
+```sh
+uv run --locked --no-editable python examples/client.py --evaluate --plan-path unencrypted_rds.json --opa-path .tools/opa/1.21.2/opa
+```
+
+The result reports `complete` execution and a `fail` compliance finding for
+`aws_db_instance.example`. Missing/unknown/sensitive encryption yields
+`indeterminate`; engine failures are separate tool errors. See the
+[evaluation walkthrough](docs/trying-evaluation.md) and
+[saved full report](examples/reports/unencrypted-rds-evaluation.json).
 
 ## Run the server for an MCP host
 
@@ -48,7 +90,7 @@ only. There is no terminal prompt or HTTP page. See
 [host process settings](docs/trying-analysis.md#7-connect-an-mcp-host-later) and
 [all CLI options](docs/development.md#mcp-interface-and-stdio-a6).
 
-## Supported behavior and boundaries
+## Current analysis behavior and boundaries
 
 - Terraform plan JSON format major 1; state JSON, HCL and binary plans are rejected.
 - Generic provider identities, recursive modules and exact numeric/string instance
@@ -62,7 +104,7 @@ only. There is no terminal prompt or HTTP page. See
   active analysis are enforced. Run `--help` for startup options.
 - Attribute values, variables, outputs and internal sensitive/unknown paths are
   absent from responses. Resource identities are intentionally returned.
-- The server never executes Terraform, applies changes, or connects to AWS.
+- Neither tool executes Terraform, applies changes, or connects to AWS.
   Provide a completed, stable plan file; it does not freeze concurrent file writes.
 
 Development uses Python 3.14.7 with locked dependencies and a `src/` layout.
@@ -73,6 +115,10 @@ observed local macOS editable-import issue. See [development notes](docs/develop
 
 ## Verification
 
+Install the pinned OPA runtime for the full suite, which includes real policy
+tests. The documented [analysis-only command](docs/trying-evaluation.md#5-verify-locally)
+works without it. Current verification: **643 Python tests and 7 Rego tests pass**.
+
 ```sh
 uv run --locked --no-editable pytest
 uv run --locked --no-editable ruff check .
@@ -80,30 +126,40 @@ uv run --locked --no-editable ruff format --check .
 uv build
 ```
 
-The [acceptance record](docs/analysis-acceptance.md) maps AN-01–AN-15 to tests and
+The original analysis increment had **521 passing tests**, including
+real MCP stdio and example-client tests. The
+[acceptance record](docs/analysis-acceptance.md) maps AN-01–AN-15 to tests and
 records versions, independent wheel/stdio checks, and tested limitations.
 The [synthetic fixtures](tests/fixtures/plans/README.md) use fake values; illustrative
 [Terraform configuration](examples/terraform/analysis/main.tf) is not executed by
 tests. No OPA setup or policy tests belong to this analysis increment.
 
-## Project progression
+## Roadmap
 
-1. **Implemented:** `analyze_terraform_plan` for proposed infrastructure changes.
-2. **Planned:** `evaluate_terraform_policies`, starting with one RDS encryption
-   policy using OPA/Rego and the shared parsing foundation.
-3. **Planned:** `list_policies`, then the remaining initial policy families.
+| Milestone | Scope | Status |
+| --- | --- | --- |
+| First analysis increment | Local Terraform plan analysis, safe file loading, deterministic reports, MCP stdio, examples and tests. | Complete |
+| v0.1 | All three tools and the four initial governance policy families using OPA/Rego. | In progress |
+| v0.2 | Docker packaging, expanded policies, GitHub Actions CI/CD, and contributor documentation. | Planned |
+| v0.3 | Read-only AWS discovery through boto3, cross-account support, and mocked integration tests. | Planned |
+| v0.4+ | Potential drift analysis, module documentation retrieval, cost/operational insights, and optional RAG. | Exploratory |
 
-AWS connectivity is planned after v0.1. No cloud adapter, Docker, CI workflow,
-drift, cost or retrieval capability is implemented in this increment.
+Future capabilities are not included in the current server. See the
+[release roadmap](docs/roadmap.md) for scope and completion criteria.
+
+## Documentation
 
 - [Requirements and acceptance criteria](docs/requirements.md)
 - [Architecture and decisions](docs/architecture.md)
 - [Specification 001](docs/specifications/analyze-terraform-plan.md)
+- [Specification 002: policy evaluation](docs/specifications/evaluate-terraform-policies.md)
+- [Evaluation walkthrough](docs/trying-evaluation.md)
+- [Evaluation acceptance evidence](docs/evaluation-acceptance.md)
 - [Implementation plan](docs/implementation-plan.md)
 - [Release roadmap](docs/roadmap.md)
 - [Repository guidance](AGENTS.md)
 
 Stack: Python 3.14+, the official MCP Python SDK, Pydantic, AnyIO, uv, pytest and
-Ruff. Policy evaluation will introduce OPA/Rego.
+Ruff. Policy evaluation uses OPA/Rego.
 
 License: [Apache 2.0](LICENSE).

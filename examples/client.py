@@ -18,12 +18,22 @@ from mcp.types import TextContent
 
 
 async def run_client(
-    root: Path, plan_path: str, *, list_tools: bool, legacy: bool
+    root: Path,
+    plan_path: str,
+    *,
+    list_tools: bool,
+    legacy: bool,
+    evaluate: bool = False,
+    opa_path: Path | None = None,
+    policy_ids: list[str] | None = None,
 ) -> int:
-    """Discover tools or call analysis; display only the server's public result."""
+    """Discover tools or call analysis/evaluation; display only public results."""
+    arguments = ["-I", "-m", "cloud_governance_mcp", "--allowed-root", str(root)]
+    if opa_path is not None:
+        arguments.extend(["--opa-path", str(opa_path.resolve())])
     parameters = StdioServerParameters(
         command=sys.executable,
-        args=["-I", "-m", "cloud_governance_mcp", "--allowed-root", str(root)],
+        args=arguments,
     )
     # Client manages connection/version negotiation and subprocess cleanup.
     # Legacy mode explicitly exercises the older initialization handshake.
@@ -32,11 +42,15 @@ async def run_client(
         if list_tools:
             print(json.dumps([tool.name for tool in tools.tools], indent=2))
             return 0
+        tool_arguments = {"plan_path": plan_path}
+        if evaluate and policy_ids is not None:
+            tool_arguments["policy_ids"] = policy_ids
         result = await client.call_tool(
-            "analyze_terraform_plan", {"plan_path": plan_path}
+            "evaluate_terraform_policies" if evaluate else "analyze_terraform_plan",
+            tool_arguments,
         )
         if result.is_error:
-            # A failed call has fixed text, not a structured success report.
+            # Evaluation failures may contain a safe structured error report.
             for content in result.content:
                 if isinstance(content, TextContent):
                     print(content.text, file=sys.stderr)
@@ -68,6 +82,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Print discovered tool names instead of analyzing a plan.",
     )
     parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Evaluate the selected plan using real OPA.",
+    )
+    parser.add_argument("--opa-path", type=Path, help="Operator path to pinned OPA.")
+    parser.add_argument(
+        "--policy-id",
+        action="append",
+        dest="policy_ids",
+        help="Select an implemented policy ID.",
+    )
+    parser.add_argument(
         "--legacy", action="store_true", help="Use the legacy initialization handshake."
     )
     arguments = parser.parse_args(argv)
@@ -80,6 +106,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 arguments.plan_path,
                 list_tools=arguments.list_tools,
                 legacy=arguments.legacy,
+                evaluate=arguments.evaluate,
+                opa_path=arguments.opa_path,
+                policy_ids=arguments.policy_ids,
             )
         )
     except KeyboardInterrupt:

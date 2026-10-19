@@ -1,8 +1,7 @@
 # Implementation plan
 
-Status: Specification 001 implemented; A1–A7 complete.
-Analysis is ready for user familiarization through MCP stdio. E1 is the next
-development increment. Updated: 2026-10-16.
+Status: Specifications 001 and 002 implemented; A1–A7 and E1–E5 complete.
+L1 (policy listing) is the next increment. Updated: 2026-10-19.
 
 Build in this order: `analyze_terraform_plan`, `evaluate_terraform_policies`,
 `list_policies`, then expanded policy coverage. Each task has a narrow result and
@@ -65,8 +64,13 @@ listing belong to subsequent increments. Bootstrap, contracts, contained loading
 Terraform normalization, the analysis service/summaries and MCP stdio are
 implemented and verified. [The walkthrough](trying-analysis.md) is ready for the
 user to try; [acceptance evidence](analysis-acceptance.md) records all 15 cases.
-E1 is the next development increment after familiarization. Dependency
-installation occurred in A1; specification work required no dependency installation.
+The user approved and authorized implementing the next specification;
+[Specification 002](specifications/evaluate-terraform-policies.md) now defines
+evaluation contracts, the standalone RDS policy, OPA boundaries and EV-01–EV-24.
+E1–E5 now implement it; [evaluation acceptance](evaluation-acceptance.md) records
+verification. L1 is the next increment.
+Dependency installation occurred in A1; specification drafting requires no
+dependency installation.
 Task completion checks below are technical checkpoints, not additional user
 approval gates.
 
@@ -88,13 +92,20 @@ evaluator, catalog, policy-listing tool, or compliance reports exist yet.
 
 ## Increment 2: evaluate one policy
 
+Follow the implemented [Specification 002](specifications/evaluate-terraform-policies.md).
+Its decisions refine the earlier architecture proposals:
+one active evaluation with no queue, explicit policy projection states, complete
+policy/resource-pair validation and atomic engine failures. Install/pin OPA during
+implementation, not specification drafting. Analysis and evaluation are exposed;
+listing and expanded coverage remain subsequent increments.
+
 | Task | Depends on | Deliverable | Verification / done when |
 | --- | --- | --- | --- |
-| E1: Define evaluation contracts and catalog | A7 | Check outcomes, policy metadata, findings, error/report models, RDS catalog entry, and policy-specific projections of the shared snapshot. Select/document the exact supported OPA 1.x runtime and installation/checksum instructions. Add policy package-data rules. | Tests validate strict encryption booleans, pass/fail/indeterminate/not-applicable semantics, policy selection, and safe reason codes. The existing analysis suite still runs without OPA. |
-| E2: Implement one Rego policy | E1 | Rego v1 AWS-RDS-001 for standalone `aws_db_instance`, defined report entrypoint with explicit outcomes, and restricted capabilities aligned with the pinned OPA. | `opa check --strict`, formatting checks, and `opa test` pass for true, false, missing, unknown, sensitive, non-applicable, deleted, and nested-address cases. Capabilities reject network/runtime built-ins. |
-| E3: Implement OPA runner | E2 | Async direct invocation, fixed arguments/query, stdin input, minimal environment, bounded pipes/timeouts/concurrency, and validated output. | Real OPA tests return expected checks. Failure tests cover missing/incompatible binary, compilation/runtime errors, undefined query, malformed/missing check output, deadline, output overflow, and cancellation cleanup. No shell or plan values in argv/logs. |
-| E4: Add evaluation service/reporting | E3 | Reuse A4's normalized resources directly; validate applicable-pair completeness and render catalog-controlled findings/coverage. Extend the parser only for required policy attributes while preserving the analysis contract. | Tests distinguish violations from engine errors and unknown inputs. Empty, unsupported, or deleted-only scopes cannot pass. Report ordering is stable; sensitive sentinels are absent from reports and logs. Analysis never calls OPA. |
-| E5: Expose and verify evaluation | E4 | Add `evaluate_terraform_policies` alongside analysis, validate policy selection, and return structured findings/errors. Update setup/sample reports and wheel asset checks. | SDK tests discover exactly two tools. Real OPA and stdio evaluation tests pass, including safe failures; analysis still works when OPA is absent. Full evaluation verification fails clearly when OPA is unavailable. |
+| E1 (complete): Define evaluation contracts and catalog | A7 | Check outcomes, settings/limits, policy metadata, findings, error/report models, RDS catalog entry, and optional policy projection during shared normalization. Select/document the exact supported OPA 1.x runtime and installation/checksum instructions; OPA 1.21.2 is verified on macOS arm64; see [setup](opa-setup.md). Add policy package-data/cache rules. | Tests validate strict encryption booleans, mask/scope/source precedence, explicit outcomes, selection, count/status contracts and safe reason codes (EV-01, EV-03–EV-07 and relevant EV-20/EV-23 cases). Analysis remains unchanged and runs without OPA. |
+| E2 (complete): Implement one Rego policy | E1 | Rego v1 AWS-RDS-001 for standalone `aws_db_instance`, defined report entrypoint with explicit outcomes, and restricted capabilities aligned with the pinned OPA. | `opa check --strict`, formatting checks, and `opa test` pass for true, false, missing, unknown, sensitive, non-applicable, deleted, and nested-address cases. Capabilities reject network/runtime built-ins. |
+| E3 (complete): Implement OPA runner | E2 | Async direct invocation, fixed arguments/query, stdin input, minimal environment, bounded pipes/timeouts/concurrency, and validated output. | Real OPA tests return expected checks. Failure tests cover missing/incompatible binary, compilation/runtime errors, undefined query, malformed/missing check output, deadline, output overflow, and cancellation cleanup. No shell or plan values in argv/logs. |
+| E4 (complete): Add evaluation service/reporting | E3 | Wire E1's optional adapter projection into a separate evaluation service; validate all expected pairs and render catalog-controlled findings/coverage. Use one active evaluation, no queue, independently of analysis admission. | Tests distinguish violations from engine errors and unknown inputs. Empty, unsupported, or deleted-only scopes cannot pass. Report ordering is stable; sensitive sentinels are absent from reports and logs. Analysis never calls OPA. |
+| E5 (complete): Expose and verify evaluation | E4 | Add `evaluate_terraform_policies` alongside analysis, validate policy selection, and return structured findings/errors. Update setup/sample reports and wheel asset checks. | SDK tests discover exactly two tools. Real OPA and stdio evaluation tests pass, including safe failures; analysis still works when OPA is absent. Full evaluation verification fails clearly when OPA is unavailable. |
 
 Completion checkpoint: clients can separately inspect changes and evaluate one
 governance rule against the same parsing foundation. Analysis describes changes;

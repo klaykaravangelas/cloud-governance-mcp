@@ -9,8 +9,14 @@ from uuid import uuid4
 
 import anyio
 
-from cloud_governance_mcp.config import AnalysisSettings, validate_analysis_settings
+from cloud_governance_mcp.config import (
+    AnalysisSettings,
+    EvaluationSettings,
+    validate_analysis_settings,
+    validate_evaluation_settings,
+)
 from cloud_governance_mcp.errors import ConfigurationError, UnsupportedPlatformError
+from cloud_governance_mcp.evaluation_service import EvaluationService
 from cloud_governance_mcp.files import RestrictedPlanLoader
 from cloud_governance_mcp.server import create_server, run_stdio
 from cloud_governance_mcp.service import AnalysisService
@@ -23,11 +29,13 @@ class _SafeArgumentParser(argparse.ArgumentParser):
         raise ConfigurationError() from None
 
 
-def parse_settings(argv: Sequence[str] | None = None) -> AnalysisSettings:
-    """Parse explicit local roots/positive budgets without opening directories."""
+def parse_configuration(
+    argv: Sequence[str] | None = None,
+) -> tuple[AnalysisSettings, EvaluationSettings]:
+    """Parse both tools' operator settings without opening roots or probing OPA."""
     parser = _SafeArgumentParser(
         prog="cloud-governance-mcp",
-        description="Read-only Terraform plan analysis over MCP stdio.",
+        description="Read-only Terraform plan analysis and policy evaluation over MCP stdio.",
         allow_abbrev=False,
     )
     parser.add_argument(
@@ -51,9 +59,36 @@ def parse_settings(argv: Sequence[str] | None = None) -> AnalysisSettings:
             help=f"{description} (default: {default}).",
         )
     parser.add_argument(
+        "--opa-path",
+        help="Absolute path to the pinned OPA executable; optional for analysis.",
+    )
+    for name in EvaluationSettings.model_fields:
+        if name == "opa_path":
+            continue
+        default = EvaluationSettings.model_fields[name].default
+        parser.add_argument(
+            "--" + name.replace("_", "-"),
+            type=int,
+            default=default,
+            help=f"Evaluation budget (default: {default}).",
+        )
+    parser.add_argument(
         "--version", action="version", version=version("cloud-governance-mcp")
     )
-    return validate_analysis_settings(vars(parser.parse_args(argv)))
+    arguments = vars(parser.parse_args(argv))
+    return (
+        validate_analysis_settings(
+            {key: arguments[key] for key in AnalysisSettings.model_fields}
+        ),
+        validate_evaluation_settings(
+            {key: arguments[key] for key in EvaluationSettings.model_fields}
+        ),
+    )
+
+
+def parse_settings(argv: Sequence[str] | None = None) -> AnalysisSettings:
+    """Keep the existing analysis settings helper compatible for Python callers."""
+    return parse_configuration(argv)[0]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -65,10 +100,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     logging.getLogger("mcp").setLevel(logging.WARNING)
     try:
-        settings = parse_settings(argv)
+        settings, evaluation_settings = parse_configuration(argv)
         with RestrictedPlanLoader(settings) as loader:
             service = AnalysisService(settings, loader=loader)
-            anyio.run(run_stdio, create_server(service), backend="asyncio")
+            evaluation = EvaluationService(settings, evaluation_settings, loader=loader)
+            anyio.run(run_stdio, create_server(service, evaluation), backend="asyncio")
         return 0
     except (ConfigurationError, UnsupportedPlatformError) as error:
         print(str(error), file=sys.stderr)

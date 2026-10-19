@@ -39,3 +39,32 @@ def validate_analysis_settings(value: object) -> AnalysisSettings:
     except ValidationError:
         # Suppress exception chaining so startup diagnostics cannot echo paths.
         raise ConfigurationError() from None
+
+
+class EvaluationSettings(ContractModel):
+    """Operator-only evaluator budgets; construction never probes the binary."""
+
+    opa_path: PlanPath | None = Field(default=None, repr=False)
+    max_opa_input_bytes: PositiveInt = 4_194_304
+    max_opa_output_bytes: PositiveInt = 2_097_152
+    max_opa_stderr_bytes: PositiveInt = 65_536
+    opa_eval_timeout_seconds: PositiveInt = 5
+    opa_process_timeout_seconds: PositiveInt = 10
+    max_evaluation_bytes: PositiveInt = 4_194_304
+
+    @model_validator(mode="after")
+    def absolute_executable_and_deadlines(self) -> Self:
+        """A shorter process budget would defeat OPA's own evaluation timeout."""
+        if self.opa_path is not None and not Path(self.opa_path).is_absolute():
+            raise ValueError("Executable must be absolute.")
+        if self.opa_process_timeout_seconds <= self.opa_eval_timeout_seconds:
+            raise ValueError("Process deadline must exceed evaluation timeout.")
+        return self
+
+
+def validate_evaluation_settings(value: object) -> EvaluationSettings:
+    """Keep operator paths and rejected option values out of startup errors."""
+    try:
+        return EvaluationSettings.model_validate(value)
+    except ValidationError:
+        raise ConfigurationError() from None

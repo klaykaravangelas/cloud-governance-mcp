@@ -1,7 +1,8 @@
 # Proposed architecture
 
 Status: first analysis increment A1–A7 implemented and verified on macOS arm64.
-User familiarization is next. Updated: 2026-10-16.
+Specification 002 now implements the first evaluation policy; policy listing is next.
+Updated: 2026-10-19.
 
 ## Repository inspection
 
@@ -42,6 +43,12 @@ catalog. Evaluation does not call the analysis MCP tool. No database, plugin
 discovery system, background worker service, or generic cloud abstraction
 framework is needed in v0.1.
 
+The implemented [Specification 002](specifications/evaluate-terraform-policies.md)
+for E1–E5 refines the evaluation design below. It defines explicit required-value
+states, standalone-only RDS scope, one active evaluation with no queue, complete
+policy/resource-pair validation and atomic engine failures. Analysis and evaluation are exposed;
+listing and expanded policy coverage remain future increments.
+
 | Increment | User-visible tool | Components introduced |
 | --- | --- | --- |
 | Analysis | `analyze_terraform_plan` | Package/stdio entrypoint, settings, restricted loader, generic Terraform parser, normalized identities/actions/masks, and analysis summaries. |
@@ -57,9 +64,14 @@ src/cloud_governance_mcp/
   __main__.py             # explicit stdio entrypoint; no import-time startup
   server.py               # thin SDK tool registration and protocol errors
   config.py               # validated operator-only settings
-  service.py              # shared load/adapt; analysis and evaluation branches
+  service.py              # existing analysis orchestration
+  evaluation_service.py   # independent evaluation admission and orchestration
   analysis.py             # implemented public analysis summaries
   models.py               # Pydantic core contracts; no MCP imports
+  evaluation_models.py    # strict policy/check/report contracts
+  evaluation_errors.py    # safe fixed evaluation failures
+  projection.py           # optional masked desired-state policy inputs
+  catalog.py              # lazy package-only metadata loading
   files.py                # contained, bounded JSON reads
   normalization.py        # sensitive/unknown path handling shared by adapters
   adapters/
@@ -70,7 +82,7 @@ src/cloud_governance_mcp/
     rego/                 # versioned packaged production Rego files
   engine/
     opa.py                # direct process invocation and output validation
-  reporting.py            # future compliance findings and coverage
+  reporting.py            # compliance findings and coverage
 tests/
   unit/
   integration/            # real OPA and real stdio
@@ -89,8 +101,8 @@ directory.
 
 ## Components and interfaces
 
-The loader, Terraform adapter, analysis builder/service and MCP analysis interface
-are implemented; policy interfaces remain planned contracts for later tasks.
+The loader, adapter, both services, catalog, OPA engine and reporting are
+implemented. The catalog is internal; the listing MCP tool remains planned.
 
 | Component | Interface | Responsibility |
 | --- | --- | --- |
@@ -98,10 +110,10 @@ are implemented; policy interfaces remain planned contracts for later tasks.
 | Terraform adapter | `TerraformPlanAdapter.normalize(plan: object) -> ResourceSnapshot` | Implemented in A4: validate consumed plan structures, recursively merge identities/actions by exact address, extract typed masks and fixed warnings. Discard attribute values; a redacted desired-value projection belongs to evaluation. |
 | Analysis builder | `analysis.summarize(snapshot: ResourceSnapshot) -> PlanAnalysis` | Implemented in A5: deterministic public identities, action/type/mode counts, managed changing count, and complete/partial status from coverage warnings. Revalidate internal contracts; omit masks and values. |
 | Policy catalog | `list_policies() -> list[PolicyMetadata]` | One metadata source for listing, applicability, selection, and safe messages. |
-| Policy engine | `evaluate(snapshot: ResourceSnapshot, policies: list[PolicyMetadata]) -> EngineResult` | Execute trusted Rego; validate exhaustive check results and sanitize failures. |
+| Policy engine | `await OpaEngine.evaluate(input: EvaluationInput, catalog: PolicyCatalog) -> EngineReport` | Execute trusted Rego; validate exhaustive check results and sanitize failures. |
 | Report builder | `build_report(snapshot, engine_result) -> EvaluationReport` | Aggregate coverage and construct safe findings from trusted templates. |
-| Governance service | `await AnalysisService.analyze(plan_path: str) -> PlanAnalysis`; future `evaluate(plan_path, policy_ids)` | Analysis implemented in A5: validate, reject overlap, offload the whole pipeline, enforce compact UTF-8 output size, join cancelled workers and return only safe errors. Evaluation remains planned. |
-| MCP tools | `create_server(service) -> mcp.server.Server`; `run_stdio(server)` | Implemented in A6: exactly one analysis tool, strict model-derived schemas, validated arguments/results, identical safe text/structured output, read-only hints and fixed tool errors. |
+| Governance services | `await AnalysisService.analyze(plan_path) -> PlanAnalysis`; `await EvaluationService.evaluate(plan_path, policy_ids=None) -> EvaluationReport` | Independent bounded admission, shared safe loader/adapter, off-loop work and serialization budgets, cancellation cleanup and safe errors. |
+| MCP tools | `create_server(service) -> mcp.server.Server`; `run_stdio(server)` | Implemented in A6: analysis and evaluation tools, strict model-derived schemas, validated arguments/results, identical safe text/structured output, read-only hints and fixed tool errors. |
 
 The service receives loader, adapter, and engine dependencies through ordinary
 constructors/functions. Introduce a small `Protocol` for adapters/engines when it
@@ -131,9 +143,9 @@ Malformed protocol envelopes remain SDK-managed and are verified to produce safe
 `INVALID_PARAMS` responses. Unknown tool names receive a fixed protocol error;
 known-tool failures return `isError=true` without a structured success object.
 
-The CLI creates one service/loader, enters SDK stdio on the asyncio backend, then
+The CLI creates two services sharing one loader, enters SDK stdio on the asyncio backend, then
 closes pinned roots after handlers finish. Root/limit arguments are operator-only;
-no transport selector, logging-level tool, policy tool, shell or AWS client exists.
+no transport selector, logging-level tool, policy-listing tool, shell or AWS client exists.
 Argument-parser diagnostics are fixed to avoid echoing paths/options. Imports do
 not start serving. SDK debug logging stays disabled and stdout carries protocol
 frames only. Both modern and legacy SDK clients are tested; protocol framing,
@@ -143,16 +155,18 @@ version negotiation and cancellation notifications remain SDK responsibilities.
 
 Use JSON-compatible typed values and strict Pydantic validation. Terraform permits
 additive fields within a supported format major; ignore unneeded top-level fields.
-A4 retains identities and mask metadata only. Evaluation will add a redacted
-projection that preserves the provider-specific values its policies need. Validate fields used in
-decisions strictly. Unknown actions or malformed required structures produce
+A4 retains identities and mask metadata only. Evaluation will optionally add a
+projection during the same normalization pass, preserving only the provider-specific
+values its policies need. Specification 002 retains a known encryption boolean
+and derives cluster-scope states without retaining cluster identifier strings.
+Validate fields used in decisions strictly. Unknown actions or malformed required structures produce
 unsupported/invalid-input errors rather than guessed interpretations.
 
 | Model | Key fields and invariants |
 | --- | --- |
 | `ResourceSnapshot` | `schema_version`, `source_kind="terraform_plan"`, source format version, resources, coverage warnings. Schema version is internal and distinct from Terraform's. |
 | `ResourceAnalysis` | Public `address`, `provider_name`, `resource_type`, `name`, `mode`, `module_address`, optional index/previous address, ordered `actions`, derived category, and source provenance. No attribute values or masks. |
-| `NormalizedResource` | A2 wraps `resource: ResourceAnalysis` with `unknown_paths`, `sensitive_paths`, and `unknown_metadata_complete`. Future evaluation adds a redacted desired-attribute projection when needed, preserving provider-specific values internally. |
+| `NormalizedResource` | Wraps `resource: ResourceAnalysis` with mask paths and uncertainty metadata. Evaluation opts into `desired_state`, retaining only a known encryption boolean and value-free scope/uncertainty states. Analysis leaves it absent. |
 | `PolicyMetadata` | Stable `id`, title, description, severity (`low/medium/high/critical`), resource types, required paths/configuration, and version. |
 | `CheckResult` | Policy ID, resource address, outcome (`pass/fail/indeterminate/not_applicable`), trusted reason code, and optional attribute path. No arbitrary evidence value or free-form plan-derived explanation. |
 | `EvaluationError` | Stable code, safe message, optional policy ID; never a violation. Examples: `OPA_NOT_FOUND`, `OPA_TIMEOUT`, `OPA_EXECUTION_ERROR`, `OPA_OUTPUT_INVALID`. |
@@ -166,7 +180,7 @@ the OPA input, while retaining mask paths. Preserve unknown paths separately fro
 missing or explicit null values. Never insert text sentinels that a policy might
 interpret as a real value. Do not retain raw `before` values in the shared model;
 the selected policies assess desired state. Provider-specific non-sensitive
-attributes remain available internally for future policies.
+attributes may be added to the internal projection when future policies require them.
 
 ## Terraform interpretation
 
@@ -202,13 +216,15 @@ OPA becomes a separately installed, pinned local prerequisite for evaluation;
 analysis has no OPA startup check or runtime dependency. Listing reads metadata
 without invoking OPA, so an unavailable evaluator does not disable the other
 tools. Use a direct async
-subprocess with an operator-configured absolute executable path resolved once at
-startup. No shell and no plan-controlled arguments. Proposed invocation:
+subprocess with an optional operator-configured absolute executable path captured
+at startup. Missing/unconfigured OPA fails evaluation safely, not server startup;
+Specification 002 defines bounded lazy version verification and runtime selection
+in E1. No shell and no plan-controlled arguments. Fixed invocation:
 
 ```text
 <trusted-opa> eval --format=json --stdin-input --strict --strict-builtin-errors
   --timeout=5s --capabilities <packaged-capabilities>
-  --data <packaged-production-rego> --data <packaged-catalog>
+  --data <packaged-rds.rego> --data <packaged-catalog>
   data.cloud_governance.report
 ```
 
@@ -219,16 +235,20 @@ capabilities to required deterministic built-ins, excluding `http.send` and
 environment/runtime introspection. No remote bundles or user policies.
 
 The Rego entrypoint returns a defined object containing explicit check outcomes.
-Python validates IDs, resource membership, expected applicable policy/resource
-pairs, outcome enums, and reason codes. Missing expected checks, undefined query
-results, or malformed JSON are errors. A defined empty checks list is valid only
-when no applicable checks exist. Do not use `--fail-defined`: a returned violation
+Specification 002 requires a check for every selected-policy/resource pair,
+including explicit not-applicable outcomes. Python validates IDs, resource
+membership, complete pair coverage, outcome enums and reason codes. Missing
+expected checks, undefined results or malformed JSON invalidate the whole batch.
+A defined empty checks list is valid only when there are no observed resources.
+Do not use `--fail-defined`: a returned violation
 is a successful evaluation, not a process failure.
 
 Use concurrent bounded pipe reads, a process deadline longer than OPA's evaluation
-timeout, and terminate/reap on deadline, overflow, or cancellation. Initially allow
-one active OPA process and a bounded pending queue (proposed maximum four); reject
-excess requests with a safe busy error. Never expose raw stderr or traces.
+timeout, and terminate/kill/reap on deadline, overflow, or cancellation. Allow one
+active evaluation, including loading and any version probe, with no pending
+queue; reject overlap with a safe busy error. Keep analysis admission independent.
+Never expose raw stderr or traces. These implemented Specification 002 decisions replace
+the earlier proposed four-request OPA queue.
 
 OPA documents these flags in its [CLI reference](https://www.openpolicyagent.org/docs/cli).
 Use Rego v1 syntax and execute policy tests with `opa test`, as described in
@@ -238,11 +258,11 @@ Use Rego v1 syntax and execute policy tests with `opa test`, as described in
 
 `evaluation_status` answers whether execution completed:
 
-- `complete`: all selected applicable checks produced valid outcomes; some may
-  still be indeterminate because the input is uncertain.
-- `partial`: some trustworthy checks were produced but an execution error or
-  incomplete plan coverage prevents complete evaluation.
-- `failed`: no trustworthy evaluation can be returned.
+- `complete`: the whole expected batch validated and no coverage warnings exist;
+  some outcomes may still be indeterminate because the input is uncertain.
+- `partial`: the whole batch validated, but plan coverage warnings prevent a
+  complete evaluation. Initially retain all snapshot warning types conservatively.
+- `failed`: an engine failure invalidated the atomic batch; no checks are trusted.
 
 `compliance_status` follows this precedence:
 
@@ -255,7 +275,7 @@ Use Rego v1 syntax and execute policy tests with `opa test`, as described in
 Pass means the selected policies passed on supported resources in this plan. It
 does not certify unsupported resources or the deployed account. Report unsupported
 resources and selected-policy scope explicitly. Sort results by policy ID, resource
-address, and attribute path; deduplicate stable finding keys. Return counts of
+address, and attribute path; reject duplicate check keys. Return counts of
 passes, failures, indeterminate checks, skips, and unsupported resources.
 
 Invalid tool arguments, denied paths, invalid plans, and engine execution failures
@@ -266,7 +286,9 @@ release. A raised `ToolError` alone does not carry structured output in the curr
 SDK; do not assume it preserves a report. Findings and unknown-value checks alone
 are ordinary successful tool results. SDK-level protocol errors remain SDK-managed.
 
-Illustrative successful tool result for a synthetic plan (not executable output):
+The following earlier illustration shows report essentials for a synthetic plan,
+not executable output or a complete Specification 002 response. Specification 002 adds
+source metadata, policy scope, reason codes, warnings and full count invariants:
 
 ```json
 {
@@ -326,7 +348,7 @@ logging off and verify its validation-error behavior with sensitive test inputs.
 | Pydantic at boundaries | Typed schemas for tools, settings, normalized input and policy results. Hide validation input values in all user-visible errors. |
 | Analysis before evaluation | Validate the shared parser through a useful MCP tool before introducing policy execution. Analysis handles identities/actions across resource types without requiring OPA. |
 | OPA CLI with packaged Rego | Exercises real policy-as-code without a persistent service or additional Python OPA wrapper. Requires a documented local binary; process latency is acceptable initially. |
-| Redacted desired-state snapshot | Keep provider-specific attributes without exposing secrets or coupling policies to Terraform transport. Uncertainty produces indeterminate results. |
+| Redacted desired-state snapshot | Keep only required provider-specific values/states without exposing secrets or coupling policies to Terraform transport. Uncertainty produces indeterminate results. |
 | Explicit per-check outcomes | Prevent empty findings or undefined Rego from falsely implying compliance. |
 | No network/AWS implementation | Offline fixtures and local OPA make the MVP usable without credentials. Future adapters target the shared snapshot contract. |
 | Local quality checks in v0.1 | GitHub Actions and Docker remain v0.2 work as requested; add reproducible commands first. |
@@ -362,8 +384,8 @@ parsing/normalization, typed mask helpers, fixtures and illustrative HCL. A5 add
 the public summary builder and async service with limits/admission/cleanup. All
 521 tests pass. A6 implements the MCP analysis tool and stdio; A7 adds the
 [hands-on client walkthrough](trying-analysis.md), saved report and
-[acceptance evidence](analysis-acceptance.md). The first analysis increment is
-complete; full policy evaluation/listing remains planned. See
-[development setup](development.md). The OPA runtime is selected when evaluation
-is introduced. No publication is included in these increments, and no extra
+[acceptance evidence](analysis-acceptance.md). Analysis and the first standalone RDS policy are
+complete; listing and expanded policy coverage remain planned. See
+[development setup](development.md). OPA 1.21.2 is selected and verified on macOS arm64; see
+[OPA setup](opa-setup.md) and [evaluation evidence](evaluation-acceptance.md). No publication is included in these increments, and no extra
 approval gate is imposed between later tested increments.

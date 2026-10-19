@@ -1,0 +1,150 @@
+{
+  "cloud_governance_catalog": {
+    "schema_version": "1",
+    "policies": [
+      {
+        "policy_id": "AWS-RDS-001",
+        "policy_version": "1.0.0",
+        "title": "RDS storage encryption",
+        "description": "Require explicit storage encryption for standalone AWS RDS instances.",
+        "severity": "high",
+        "enabled": true,
+        "supported_provider_names": [
+          "registry.terraform.io/hashicorp/aws"
+        ],
+        "supported_resource_types": [
+          "aws_db_instance"
+        ],
+        "required_paths": [
+          [
+            "storage_encrypted"
+          ],
+          [
+            "cluster_identifier"
+          ]
+        ],
+        "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved.",
+        "reasons": {
+          "DATA_SOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Data sources are excluded from desired-state governance.",
+            "remediation": "No remediation is required for this check."
+          },
+          "DELETED_RESOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Deleted resources have no desired-state encryption check.",
+            "remediation": "No remediation is required for this check."
+          },
+          "RESOURCE_NOT_SUPPORTED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "This resource is outside the selected policy scope.",
+            "remediation": "No remediation is required for this check."
+          },
+          "RDS_SCOPE_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Standalone RDS scope is sensitive.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_SCOPE_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Standalone RDS scope is unknown.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "UNKNOWN_METADATA_INCOMPLETE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Unknown-value metadata is incomplete.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "DESIRED_STATE_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "The desired resource state is unavailable.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_SCOPE_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Standalone RDS scope has an unsupported value type.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_CLUSTER_ASSOCIATION_UNSUPPORTED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "RDS cluster association resolution is not supported by this policy version.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is sensitive.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is unknown.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is not explicitly specified.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is null.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption must be a known boolean.",
+            "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
+          },
+          "RDS_ENCRYPTION_ENABLED": {
+            "outcome": "pass",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is explicitly enabled.",
+            "remediation": "No remediation is required for this check."
+          },
+          "RDS_ENCRYPTION_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "storage_encrypted"
+            ],
+            "explanation": "RDS storage encryption is explicitly disabled.",
+            "remediation": "Configure storage encryption for the intended RDS resource."
+          }
+        }
+      }
+    ]
+  }
+}

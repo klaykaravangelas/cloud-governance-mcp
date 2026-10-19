@@ -201,6 +201,44 @@ class AnalysisWarning(ContractModel):
         return self
 
 
+class KnownEncryption(ContractModel):
+    """The only provider value retained for the first evaluation policy."""
+
+    state: Literal["known"] = "known"
+    value: bool = Field(repr=False)
+
+
+class UncertainEncryption(ContractModel):
+    """A value-free state: missing, masked and malformed are different facts."""
+
+    state: Literal[
+        "missing",
+        "null",
+        "unknown",
+        "sensitive",
+        "unverified",
+        "invalid_type",
+        "unavailable",
+    ]
+
+
+class DesiredStateProjection(ContractModel):
+    """Minimal RDS-specific input; cluster identifiers and raw values are absent."""
+
+    scope: Literal[
+        "standalone",
+        "cluster_associated",
+        "sensitive",
+        "unknown",
+        "unverified",
+        "unavailable",
+        "invalid_type",
+    ]
+    encryption: Annotated[
+        KnownEncryption | UncertainEncryption, Field(discriminator="state")
+    ] = Field(repr=False)
+
+
 class NormalizedResource(ContractModel):
     """Internal resource projection used by adapters and, later, policy evaluation.
 
@@ -212,6 +250,7 @@ class NormalizedResource(ContractModel):
     unknown_paths: list[AttributePath] = Field(default_factory=list, repr=False)
     sensitive_paths: list[AttributePath] = Field(default_factory=list, repr=False)
     unknown_metadata_complete: bool
+    desired_state: DesiredStateProjection | None = Field(default=None, repr=False)
 
     @model_validator(mode="after")
     def inventory_uncertainty(self) -> Self:

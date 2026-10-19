@@ -1,0 +1,141 @@
+{
+  "builtins": [
+    {
+      "name": "eq",
+      "decl": {
+        "args": [
+          {
+            "type": "any"
+          },
+          {
+            "type": "any"
+          }
+        ],
+        "result": {
+          "type": "boolean"
+        },
+        "type": "function"
+      },
+      "infix": "="
+    },
+    {
+      "name": "equal",
+      "categories": [
+        "comparison"
+      ],
+      "decl": {
+        "args": [
+          {
+            "name": "x",
+            "type": "any"
+          },
+          {
+            "name": "y",
+            "type": "any"
+          }
+        ],
+        "result": {
+          "description": "true if `x` is equal to `y`; false otherwise",
+          "name": "result",
+          "type": "boolean"
+        },
+        "type": "function"
+      },
+      "infix": "=="
+    },
+    {
+      "name": "neq",
+      "categories": [
+        "comparison"
+      ],
+      "decl": {
+        "args": [
+          {
+            "name": "x",
+            "type": "any"
+          },
+          {
+            "name": "y",
+            "type": "any"
+          }
+        ],
+        "result": {
+          "description": "true if `x` is not equal to `y`; false otherwise",
+          "name": "result",
+          "type": "boolean"
+        },
+        "type": "function"
+      },
+      "infix": "!="
+    },
+    {
+      "name": "object.union",
+      "description": "Creates a new object of the asymmetric union of two objects. For example: `object.union({\"a\": 1, \"b\": 2, \"c\": {\"d\": 3}}, {\"a\": 7, \"c\": {\"d\": 4, \"e\": 5}})` will result in `{\"a\": 7, \"b\": 2, \"c\": {\"d\": 4, \"e\": 5}}`.",
+      "decl": {
+        "args": [
+          {
+            "description": "left-hand object",
+            "dynamic": {
+              "key": {
+                "type": "any"
+              },
+              "value": {
+                "type": "any"
+              }
+            },
+            "name": "a",
+            "type": "object"
+          },
+          {
+            "description": "right-hand object",
+            "dynamic": {
+              "key": {
+                "type": "any"
+              },
+              "value": {
+                "type": "any"
+              }
+            },
+            "name": "b",
+            "type": "object"
+          }
+        ],
+        "result": {
+          "description": "a new object which is the result of an asymmetric recursive union of two objects where conflicts are resolved by choosing the key from the right-hand object `b`",
+          "dynamic": {
+            "key": {
+              "type": "any"
+            },
+            "value": {
+              "type": "any"
+            }
+          },
+          "name": "output",
+          "type": "object"
+        },
+        "type": "function"
+      }
+    }
+  ],
+  "future_keywords": [
+    "and",
+    "not",
+    "or"
+  ],
+  "wasm_abi_versions": [
+    {
+      "version": 1,
+      "minor_version": 1
+    },
+    {
+      "version": 1,
+      "minor_version": 2
+    }
+  ],
+  "features": [
+    "keywords_in_refs",
+    "rego_v1",
+    "template_strings"
+  ],
+  "allow_net": []
+}

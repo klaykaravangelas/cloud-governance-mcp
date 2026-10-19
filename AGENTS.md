@@ -11,10 +11,14 @@ then adds evaluation, then policy listing and expanded policy coverage. Read the
 approved `docs/specifications/analyze-terraform-plan.md` before implementation;
 it defines tasks A1–A7 and acceptance cases AN-01–AN-15. Documentation edits alone
 do not independently authorize scope expansion. The first analysis increment is
-complete; the user is now familiarizing themselves with the working tool. Support
-manual testing before beginning evaluation. E1 is the next development increment.
+complete. The user approved Specification 002 and authorized implementation.
+Read `docs/specifications/evaluate-terraform-policies.md` for E1–E5 and EV-01–EV-24.
+Evaluation implements one standalone RDS encryption policy using OPA 1.21.2;
+see `docs/trying-evaluation.md`, `docs/opa-setup.md` and the evaluation acceptance
+record. Continue supporting manual testing. L1 (policy listing) is next, outside
+Specification 002; do not add it while finishing evaluation.
 Use `docs/trying-analysis.md` and `docs/analysis-acceptance.md` for the walkthrough
-and AN-01–AN-15 evidence. No policy tool/catalog is implemented yet.
+and AN-01–AN-15 evidence. The runtime exposes analysis and evaluation; only AWS-RDS-001 is implemented.
 See `docs/development.md` for setup and completed checks.
 Complete each increment's checks before
 continuing; no additional approval gate is implied between increments.
@@ -50,8 +54,9 @@ continuing; no additional approval gate is implied between increments.
   A4's `TerraformPlanAdapter.normalize` validates Terraform and merges resources
   by exact address; `normalization.py` extracts/canonicalizes typed mask paths.
   Addresses are opaque; obtain module membership from explicit metadata/the tree.
-  A4 discards provider values after mask extraction. Extend with redacted desired
-  attributes only when the evaluation specification requires them. Inventory-only
+  Analysis discards provider values after mask extraction. Evaluation opts into
+  the required RDS projection during that same normalization pass, after source
+  mask union; it retains only a known encryption boolean and value-free states. Inventory-only
   actions stay unreported; absent unknown masks remain incomplete internally.
   Reuse safe entrypoints
   for input/settings. Never expose raw Pydantic errors: hiding input values does
@@ -76,13 +81,17 @@ continuing; no additional approval gate is implied between increments.
   installed/pinned SDK generation; bootstrap locks MCP 2.3.0. A6 uses its public
   low-level `mcp.server.Server`, not the `MCPServer` decorator layer: explicit
   Pydantic schemas/validation avoid input-bearing SDK argument errors/logs.
-  `server.create_server(service)` creates exactly one tool; `run_stdio` serves it.
+  `server.create_server(analysis, evaluation)` creates two tools; an analysis-only
+  injection remains supported for isolated tests. `run_stdio` serves them.
   Return both MCP text and structured content from the same validated public
   report. Return fixed `is_error` tool results; unknown tools are fixed protocol
   errors. Keep unexpected exception details away from SDK crash logging.
 - `__main__.py` and the `cloud-governance-mcp` console script own startup. Require
   repeatable `--allowed-root` and validate all four limit options. Pin roots before
-  SDK serving; close after handlers drain. CLI errors replace argparse's echoed
+  SDK serving; close after both services drain. Evaluation has separate settings,
+  one independent active slot/no queue, lazy bounded version verification and no
+  implicit executable. Missing OPA never disables analysis. See the evaluation
+  specification for the additional CLI budgets and fixed error/report mapping. CLI errors replace argparse's echoed
   inputs with fixed diagnostics. SDK debug logging is disabled; stdout belongs to
   MCP. Module imports must remain quiet and must not open roots/start a server.
 - Use SDK `Client` tests in auto and legacy modes. Current auto mode uses modern
@@ -184,5 +193,8 @@ continuing; no additional approval gate is implied between increments.
 - Inspect existing changes before editing and preserve unrelated user work.
 - Keep changes small and independently verifiable; update docs when behavior or
   supported scope changes. Record limitations and unverified checks plainly.
+- Keep the main README centered on the overall project vision and tool roadmap.
+  Label implemented and planned capabilities explicitly, and update status/setup
+  as work lands without redefining the project around only the newest tool.
 - Do not add dependencies, frameworks, future adapters, or tests without a
   concrete need in the current increment.

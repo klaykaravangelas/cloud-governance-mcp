@@ -1,7 +1,7 @@
 """Validate Terraform plan JSON and merge its identities/actions into a snapshot.
 
-Only consumed fields are validated. Additive fields and provider attributes
-are not copied into the snapshot. This adapter has no filesystem, transport,
+Only consumed fields are validated. Analysis discards provider attributes;
+evaluation can opt into a minimal masked desired-state projection. This adapter has no filesystem, transport,
 AWS, Terraform CLI, or policy-engine dependency.
 """
 
@@ -25,6 +25,7 @@ from cloud_governance_mcp.models import (
     WarningCode,
 )
 from cloud_governance_mcp.normalization import extract_mask_paths, merge_mask_paths
+from cloud_governance_mcp.projection import is_candidate, project_desired
 
 _TEXT = TypeAdapter(IdentityText)
 _POSITIVE_INT = TypeAdapter(PositiveInt)
@@ -52,10 +53,15 @@ def _text(value: object) -> str:
 
 @dataclass(repr=False)
 class _Entry:
-    """Transient, value-free resource plus optional-field presence for merging."""
+    """Transient identity/masks and, only when requested, desired source values.
+
+    Raw desired references stay inside normalization until merged masks have
+    been applied. They never become part of the returned snapshot.
+    """
 
     normalized: NormalizedResource
     supplied: frozenset[str]
+    desired: dict[str, object] | None = None
 
 
 class TerraformPlanAdapter:
@@ -66,7 +72,16 @@ class TerraformPlanAdapter:
     resource inventory. It never mutates the supplied document.
     """
 
-    def __init__(self, *, max_resources: int = 10_000, max_depth: int = 128) -> None:
+    def __init__(
+        self,
+        *,
+        max_resources: int = 10_000,
+        max_depth: int = 128,
+        include_policy_values: bool = False,
+    ) -> None:
+        if type(include_policy_values) is not bool:
+            raise ConfigurationError()
+        self._include_policy_values = include_policy_values
         try:
             self._max_resources = _POSITIVE_INT.validate_python(
                 max_resources, strict=True
@@ -164,6 +179,13 @@ class TerraformPlanAdapter:
                 resources.append(
                     (changes.get(address) or inventory[address]).normalized
                 )
+            # Projection happens after mask union, using only the authoritative
+            # source. A null/missing after never falls back to inventory/before.
+            if self._include_policy_values and is_candidate(resources[-1]):
+                source = changes.get(address) or inventory[address]
+                resources[-1].desired_state = project_desired(
+                    resources[-1], source.desired
+                )
         unreported = sum(item.resource.source == "planned_values" for item in resources)
         if unreported:
             warn("CHANGE_ACTIONS_UNREPORTED", unreported)
@@ -214,7 +236,7 @@ class TerraformPlanAdapter:
         change: dict[str, object] | None = None,
         module: str | None = None,
     ) -> _Entry:
-        """Project one source entry; attribute values never enter retained state."""
+        """Validate one source; defer optional projection until mask merging."""
         if "deposed" in raw:
             _text(raw["deposed"])
             raise AnalysisError(ErrorCode.UNSUPPORTED_PLAN_FEATURE)
@@ -275,6 +297,11 @@ class TerraformPlanAdapter:
                 and "after_unknown" in change,
             ),
             frozenset(supplied),
+            (
+                (change.get("after") if change is not None else raw.get("values"))
+                if self._include_policy_values
+                else None
+            ),
         )
 
     def _mask(self, value: object) -> list[AttributePath]:

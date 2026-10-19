@@ -46,11 +46,16 @@ def test_default_walkthrough_matches_the_saved_public_report(
     assert "unknown_paths" not in result.stdout
 
 
-def test_walkthrough_lists_the_one_implemented_tool(tmp_path: Path) -> None:
+def test_walkthrough_lists_both_implemented_tools_without_requiring_opa(
+    tmp_path: Path,
+) -> None:
     result = invoke(["--list-tools"], tmp_path)
     assert result.returncode == 0, result.stderr
     assert result.stderr == ""
-    assert json.loads(result.stdout) == ["analyze_terraform_plan"]
+    assert json.loads(result.stdout) == [
+        "analyze_terraform_plan",
+        "evaluate_terraform_policies",
+    ]
 
 
 @pytest.mark.parametrize(

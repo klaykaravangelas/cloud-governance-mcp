@@ -1,5 +1,10 @@
 # Development setup and verification
 
+Current stage: Specification 002 adds first-policy evaluation alongside analysis.
+See [evaluation evidence](evaluation-acceptance.md), [OPA setup](opa-setup.md) and
+[the evaluation walkthrough](trying-evaluation.md). The A1–A7 notes below record
+the original analysis increments and their historical check counts.
+
 Task A1 completed 2026-10-16 after approval of
 [Specification 001](specifications/analyze-terraform-plan.md). Bootstrap creates
 the installable package and development environment. A2 analysis contracts,
@@ -492,3 +497,25 @@ reverts the project to editable installation. On an unaffected development
 environment, default editable installs remain available by omitting the flag.
 The independent wheel installation also passed verification. No application or
 test code clears filesystem flags.
+
+## Policy evaluation (E1–E5)
+
+Verified 2026-10-19: 643 Python tests (no skips), 7 real Rego tests, Ruff lint/format
+and uv lock/environment/dependency checks pass. Python dependencies remain locked
+without additions. OPA 1.21.2 is an explicitly configured local executable,
+checksum-verified on macOS arm64; see [setup](opa-setup.md). Runtime assets live
+inside the package and are included by uv_build; test Rego stays under tests.
+
+The server now advertises analysis and evaluation even without OPA configuration.
+Analysis remains independent; evaluation returns a safe configuration error report
+after reading a valid plan if no evaluator was supplied. Add `--opa-path` to the
+host's startup arguments. The six evaluation budgets and exact defaults are in
+[Specification 002](specifications/evaluate-terraform-policies.md#runtime-selection-configuration-and-limits)
+and `--help`; all are operator-only. Each tool admits one active request without
+a queue, independently. The OPA child receives only locale variables and is
+terminated/killed/reaped on failure, overflow, timeout or cancellation.
+
+See [the walkthrough](trying-evaluation.md) for the two-policy-outcome comparison,
+exact checks, analysis-only test selection and host process settings, and
+[the acceptance record](evaluation-acceptance.md) for EV-01–EV-24 evidence and
+platform/scope limitations. `list_policies` remains the next increment.

@@ -1,7 +1,7 @@
 # Requirements and acceptance criteria
 
-Status: v0.1 scope planned; first analysis increment A1–A7 complete.
-Updated: 2026-10-16.
+Status: analysis A1–A7 and first-policy evaluation E1–E5 complete; remaining v0.1 scope planned.
+Updated: 2026-10-19.
 
 ## Purpose and scope
 
@@ -16,7 +16,13 @@ analysis specification is [approved](specifications/analyze-terraform-plan.md).
 Bootstrap, typed contracts, contained file loading, Terraform normalization, and
 the analysis service/summaries and MCP stdio interface are complete. A7 adds the
 [client walkthrough](trying-analysis.md) and [acceptance evidence](analysis-acceptance.md).
-Policy evaluation/listing and the complete v0.1 MVP remain planned.
+Evaluation now implements standalone RDS encryption. Policy listing, expanded
+coverage and the complete v0.1 MVP remain planned.
+
+[Specification 002](specifications/evaluate-terraform-policies.md) defines the implemented
+first evaluation increment and EV-01–EV-24 acceptance cases. See
+[evidence](evaluation-acceptance.md). Only standalone RDS encryption is currently
+implemented; the rest of the policy catalog below remains planned.
 
 ## Tool responsibilities and progression
 
@@ -125,11 +131,11 @@ OPA-specific and compliance-reporting criteria apply when evaluation is added.
 
 ## Following increments
 
-Reuse the tested loader/parser to introduce `evaluate_terraform_policies` with one
-RDS encryption policy and real OPA tests. Add policy-specific models, catalog,
-capabilities, runtime limits, and structured findings at that point. Then expose
-`list_policies` from that catalog, and incrementally complete the four v0.1 policy
-families. See [the implementation plan](implementation-plan.md) for task boundaries.
+The tested loader/parser now supports `evaluate_terraform_policies` with one RDS
+encryption policy, real OPA tests, a catalog, capabilities, runtime limits and
+structured findings. Next expose `list_policies` from that catalog, then
+incrementally complete the four v0.1 policy families. See
+[the implementation plan](implementation-plan.md) for task boundaries.
 
 ## Out of scope for v0.1
 

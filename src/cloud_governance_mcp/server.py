@@ -1,4 +1,4 @@
-"""Expose the analysis service through the official SDK's public Server API.
+"""Expose governance services through the official SDK's public Server API.
 
 Explicit handlers let us publish the strict core schemas and validate arguments
 without the decorator layer's input-bearing validation errors or log messages.
@@ -25,6 +25,13 @@ from mcp.types import (
 )
 
 from cloud_governance_mcp.errors import AnalysisError, ErrorCode
+from cloud_governance_mcp.evaluation_errors import EvaluationCode, EvaluationFailure
+from cloud_governance_mcp.evaluation_models import (
+    EvaluateTerraformPoliciesInput,
+    EvaluationReport,
+    validate_evaluation_input,
+)
+from cloud_governance_mcp.evaluation_service import EvaluationService
 from cloud_governance_mcp.models import (
     AnalyzeTerraformPlanInput,
     PlanAnalysis,
@@ -33,6 +40,7 @@ from cloud_governance_mcp.models import (
 from cloud_governance_mcp.service import AnalysisService
 
 TOOL_NAME = "analyze_terraform_plan"
+EVALUATION_TOOL_NAME = "evaluate_terraform_policies"
 _DESCRIPTION = (
     "Summarize resource identities and proposed actions from a local Terraform "
     "plan JSON file in an allowed directory. Returns no resource attribute "
@@ -49,8 +57,10 @@ def _tool_error(code: ErrorCode) -> CallToolResult:
     )
 
 
-def create_server(service: AnalysisService) -> Server:
-    """Register exactly one read-only tool around an existing shared service.
+def create_server(
+    service: AnalysisService, evaluation_service: EvaluationService | None = None
+) -> Server:
+    """Register read-only tools around independently testable services.
 
     The caller owns the service/loader lifetime. Tool schemas come from the same
     Pydantic contracts used at runtime; the SDK handles protocol envelopes and
@@ -68,32 +78,67 @@ def create_server(service: AnalysisService) -> Server:
             open_world_hint=False,
         ),
     )
+    tools = [tool]
+    if evaluation_service is not None:
+        tools.append(
+            Tool(
+                name=EVALUATION_TOOL_NAME,
+                description=(
+                    "Evaluate bundled governance policies against a local Terraform "
+                    "plan JSON file in an allowed directory. Return policy findings, "
+                    "uncertainty and coverage without resource attribute values. "
+                    "Requires configured OPA; does not inspect or modify deployed infrastructure."
+                ),
+                input_schema=EvaluateTerraformPoliciesInput.model_json_schema(),
+                output_schema=EvaluationReport.model_json_schema(),
+                annotations=ToolAnnotations(
+                    read_only_hint=True,
+                    destructive_hint=False,
+                    idempotent_hint=True,
+                    open_world_hint=False,
+                ),
+            )
+        )
 
     async def list_tools(
         ctx: ServerRequestContext, params: PaginatedRequestParams | None
     ) -> ListToolsResult:
-        """Advertise implemented behavior only; no policy tools exist yet."""
-        return ListToolsResult(tools=[tool])
+        """Advertise configured, implemented tools; policy listing remains future work."""
+        return ListToolsResult(tools=tools)
 
     async def call_tool(
         ctx: ServerRequestContext, params: CallToolRequestParams
     ) -> CallToolResult:
         """Validate all tool arguments before the service can touch a file."""
-        if params.name != TOOL_NAME:
+        if params.name not in {item.name for item in tools}:
             # Unknown tools are protocol errors. Never reflect the supplied name.
             raise MCPError(code=INVALID_PARAMS, message="Unknown tool.")
         try:
-            request = validate_analysis_input(params.arguments)
-            report = PlanAnalysis.model_validate(
-                await service.analyze(request.plan_path)
-            )
+            if params.name == TOOL_NAME:
+                request = validate_analysis_input(params.arguments)
+                report = PlanAnalysis.model_validate(
+                    await service.analyze(request.plan_path)
+                )
+                failed = False
+            else:
+                request = validate_evaluation_input(params.arguments)
+                report = EvaluationReport.model_validate(
+                    await evaluation_service.evaluate(
+                        request.plan_path, request.policy_ids
+                    )
+                )
+                failed = bool(report.errors)
             # Both channels describe exactly the same validated public object.
             # Masks and raw plan values never reach this module.
             text = report.model_dump_json()
             return CallToolResult(
                 content=[TextContent(type="text", text=text)],
                 structured_content=json.loads(text),
-                is_error=False,
+                is_error=failed,
+            )
+        except EvaluationFailure as error:
+            return CallToolResult(
+                content=[TextContent(type="text", text=str(error))], is_error=True
             )
         except AnalysisError as error:
             return _tool_error(error.code)
@@ -101,12 +146,22 @@ def create_server(service: AnalysisService) -> Server:
             # Includes invalid service results and serialization failures. SDK
             # crash logging must not receive their raw exceptions/tracebacks.
             _LOGGER.error("Tool failed code=INTERNAL_ERROR request_id=%s", uuid4().hex)
+            if params.name == EVALUATION_TOOL_NAME:
+                return CallToolResult(
+                    content=[
+                        TextContent(
+                            type="text",
+                            text=str(EvaluationFailure(EvaluationCode.INTERNAL_ERROR)),
+                        )
+                    ],
+                    is_error=True,
+                )
             return _tool_error(ErrorCode.INTERNAL_ERROR)
 
     return Server(
         "cloud-governance-mcp",
         version=version("cloud-governance-mcp"),
-        instructions="Read-only Terraform plan analysis within operator-configured directories.",
+        instructions="Read-only Terraform plan analysis and bundled policy evaluation within operator-configured directories.",
         on_list_tools=list_tools,
         on_call_tool=call_tool,
     )
