@@ -46,7 +46,7 @@ class PolicyCatalog(ContractModel):
 
 
 def load_catalog() -> PolicyCatalog:
-    """Read package assets only when evaluation needs them, never on import."""
+    """Read package assets for evaluation or listing, never on import."""
     try:
         payload = (
             files("cloud_governance_mcp.policies").joinpath("catalog.json").read_bytes()

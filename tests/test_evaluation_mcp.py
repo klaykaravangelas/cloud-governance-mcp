@@ -18,6 +18,7 @@ from cloud_governance_mcp.evaluation_models import (
 )
 from cloud_governance_mcp.evaluation_service import EvaluationService
 from cloud_governance_mcp.files import RestrictedPlanLoader
+from cloud_governance_mcp.listing import PolicyListingService
 from cloud_governance_mcp.server import create_server
 from cloud_governance_mcp.service import AnalysisService
 
@@ -39,6 +40,7 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             EvaluationService(
                 settings, EvaluationSettings(opa_path=str(opa_path)), loader=loader
             ),
+            PolicyListingService(),
         )
         connection = (
             server
@@ -63,6 +65,7 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             assert [t.name for t in tools] == [
                 "analyze_terraform_plan",
                 "evaluate_terraform_policies",
+                "list_policies",
             ]
             assert (
                 tools[1].input_schema
@@ -70,6 +73,11 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             )
             assert tools[1].output_schema == EvaluationReport.model_json_schema()
             assert tools[1].annotations.read_only_hint
+            listed = await client.call_tool("list_policies")
+            selected = [
+                policy["policy_id"] for policy in listed.structured_content["policies"]
+            ]
+            assert selected == ["AWS-RDS-001"]
             for filename, status in [
                 ("encrypted_rds.json", "pass"),
                 ("unencrypted_rds.json", "fail"),
@@ -77,7 +85,8 @@ async def test_both_tools_real_policy_results_and_safe_failures(
                 ("unknown_sensitive.json", "indeterminate"),
             ]:
                 result = await client.call_tool(
-                    "evaluate_terraform_policies", {"plan_path": filename}
+                    "evaluate_terraform_policies",
+                    {"plan_path": filename, "policy_ids": selected},
                 )
                 assert not result.is_error
                 report = EvaluationReport.model_validate(result.structured_content)

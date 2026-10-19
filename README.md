@@ -18,23 +18,23 @@ The v0.1 target has three complementary tools:
 | --- | --- | --- |
 | `analyze_terraform_plan` | Explain proposed changes through resource identities, action/type/mode counts, and coverage warnings. | Implemented |
 | `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; standalone RDS encryption (AWS-RDS-001) |
-| `list_policies` | Describe the implemented governance policies and their severity classifications. | Planned; follows evaluation |
+| `list_policies` | Describe implemented governance policies, versions, severity, supported resources and configuration requirements. | Implemented; uses the shared evaluation catalog without OPA |
 
 The first policy checks standalone RDS storage encryption. Planned coverage adds
 RDS clusters, unrestricted SSH ingress, mandatory resource tags and S3 public
 access protection. Only the implemented RDS policy is selectable today.
 
 Analysis explains changes; evaluation adds compliance decisions; policy
-listing will describe the available rules. AWS connectivity is a later milestone.
+listing describes the available rules. AWS connectivity is a later milestone.
 
 ## Current status
 
 Terraform plan analysis is available locally over stdio. The first analysis
 increment (A1–A7) is complete, with real MCP client/server tests, synthetic plans,
-and a hands-on walkthrough. Package version is `0.1.0.dev0`; the full three-tool
-v0.1 governance MVP remains in progress. Evaluation is available with pinned OPA
-1.21.2; policy listing remains planned. Both tools operate locally without AWS
-credentials or Terraform. Analysis needs no OPA configuration or installation.
+and a hands-on walkthrough. Package version is `0.1.0.dev0`; all three tools are
+available, while the full v0.1 policy coverage remains in progress. Evaluation
+uses pinned OPA 1.21.2. All tools operate locally without AWS credentials or
+Terraform. Analysis and policy listing need no OPA configuration or installation.
 
 ## Try the analysis tool locally
 
@@ -46,7 +46,7 @@ uv run --locked --no-editable python examples/client.py --list-tools
 uv run --locked --no-editable python examples/client.py
 ```
 
-The first call lists both implemented tools. The second analyzes our synthetic
+The first call lists all three implemented tools. The second analyzes our synthetic
 mixed plan: **7 resources, 4 managed changes**, and `partial` coverage because
 one inventory resource has no reported action. Compare the
 [input plan](tests/fixtures/plans/mixed_nested.json) with the
@@ -75,7 +75,23 @@ The result reports `complete` execution and a `fail` compliance finding for
 [evaluation walkthrough](docs/trying-evaluation.md) and
 [saved full report](examples/reports/unencrypted-rds-evaluation.json).
 
+## List available governance policies
+
+```sh
+uv run --locked --no-editable python examples/client.py --list-policies
+```
+
+This returns AWS-RDS-001 metadata from the same catalog used by evaluation,
+including its standalone-only scope and empty policy configuration requirements.
+It reads no plan and invokes no OPA process. Compare the
+[saved response](examples/reports/policy-list.json) or follow the
+[listing walkthrough](docs/trying-listing.md). `--list-tools` discovers MCP
+functions; `--list-policies` discovers governance rules.
+
 ## Run the server for an MCP host
+
+To use the tools directly in Codex, follow the
+[Codex stdio connection guide](docs/connecting-codex.md).
 
 After setup, launch with an existing absolute directory containing plan files:
 
@@ -104,7 +120,7 @@ only. There is no terminal prompt or HTTP page. See
   active analysis are enforced. Run `--help` for startup options.
 - Attribute values, variables, outputs and internal sensitive/unknown paths are
   absent from responses. Resource identities are intentionally returned.
-- Neither tool executes Terraform, applies changes, or connects to AWS.
+- No tool executes Terraform, applies changes, or connects to AWS.
   Provide a completed, stable plan file; it does not freeze concurrent file writes.
 
 Development uses Python 3.14.7 with locked dependencies and a `src/` layout.
@@ -117,7 +133,7 @@ observed local macOS editable-import issue. See [development notes](docs/develop
 
 Install the pinned OPA runtime for the full suite, which includes real policy
 tests. The documented [analysis-only command](docs/trying-evaluation.md#5-verify-locally)
-works without it. Current verification: **643 Python tests and 7 Rego tests pass**.
+works without it. Current verification: **702 Python tests and 7 Rego tests pass**.
 
 ```sh
 uv run --locked --no-editable pytest
@@ -151,8 +167,12 @@ Future capabilities are not included in the current server. See the
 
 - [Requirements and acceptance criteria](docs/requirements.md)
 - [Architecture and decisions](docs/architecture.md)
+- [Connect Codex over stdio](docs/connecting-codex.md)
 - [Specification 001](docs/specifications/analyze-terraform-plan.md)
 - [Specification 002: policy evaluation](docs/specifications/evaluate-terraform-policies.md)
+- [Specification 003: policy listing](docs/specifications/list-policies.md)
+- [Policy listing walkthrough](docs/trying-listing.md)
+- [Policy listing acceptance evidence](docs/listing-acceptance.md)
 - [Evaluation walkthrough](docs/trying-evaluation.md)
 - [Evaluation acceptance evidence](docs/evaluation-acceptance.md)
 - [Implementation plan](docs/implementation-plan.md)

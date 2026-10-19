@@ -56,6 +56,9 @@ def test_core_contracts_import_without_loading_mcp(tmp_path: Path) -> None:
             "import cloud_governance_mcp.engine.opa; "
             "import cloud_governance_mcp.reporting; "
             "import cloud_governance_mcp.evaluation_service; "
+            "import cloud_governance_mcp.listing_models; "
+            "import cloud_governance_mcp.listing_errors; "
+            "import cloud_governance_mcp.listing; "
             "assert not any(name == 'mcp' or name.startswith('mcp.') "
             "for name in sys.modules)",
         ],
@@ -69,3 +72,32 @@ def test_core_contracts_import_without_loading_mcp(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert result.stdout == ""
     assert result.stderr == ""
+
+
+def test_listing_imports_never_read_catalog_assets(tmp_path: Path) -> None:
+    """Importing the core must stay quiet even when asset access would fail."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            """
+import importlib.resources
+import sys
+def forbidden(*args, **kwargs):
+    raise RuntimeError('Unexpected import-time asset access')
+importlib.resources.files = forbidden
+import cloud_governance_mcp.listing
+import cloud_governance_mcp.listing_models
+import cloud_governance_mcp.listing_errors
+assert not any(name == 'mcp' or name.startswith('mcp.') for name in sys.modules)
+""",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == result.stderr == ""

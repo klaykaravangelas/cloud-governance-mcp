@@ -46,7 +46,7 @@ def test_default_walkthrough_matches_the_saved_public_report(
     assert "unknown_paths" not in result.stdout
 
 
-def test_walkthrough_lists_both_implemented_tools_without_requiring_opa(
+def test_walkthrough_lists_three_implemented_tools_without_requiring_opa(
     tmp_path: Path,
 ) -> None:
     result = invoke(["--list-tools"], tmp_path)
@@ -55,6 +55,7 @@ def test_walkthrough_lists_both_implemented_tools_without_requiring_opa(
     assert json.loads(result.stdout) == [
         "analyze_terraform_plan",
         "evaluate_terraform_policies",
+        "list_policies",
     ]
 
 

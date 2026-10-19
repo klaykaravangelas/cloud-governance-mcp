@@ -455,7 +455,8 @@ uses `src/cloud_governance_mcp` as the module root. Package files, including fut
 data assets placed under that module, follow its inclusion rules. Tests are
 included in the source distribution alongside examples, saved reports, docs,
 `AGENTS.md`, `.python-version` and `uv.lock`. These source/development assets are
-excluded from the wheel. No policy assets or placeholder future adapters exist.
+excluded from the wheel. Production policy assets are now packaged with the
+application; no placeholder future adapters are included.
 
 The bootstrap wheel was installed with its runtime dependencies into a separate
 temporary virtual environment outside the repository. Imports and distribution
@@ -506,7 +507,8 @@ without additions. OPA 1.21.2 is an explicitly configured local executable,
 checksum-verified on macOS arm64; see [setup](opa-setup.md). Runtime assets live
 inside the package and are included by uv_build; test Rego stays under tests.
 
-The server now advertises analysis and evaluation even without OPA configuration.
+At E5 the server advertised analysis and evaluation even without OPA configuration;
+L1 now adds catalog-only listing as its third tool.
 Analysis remains independent; evaluation returns a safe configuration error report
 after reading a valid plan if no evaluator was supplied. Add `--opa-path` to the
 host's startup arguments. The six evaluation budgets and exact defaults are in
@@ -518,4 +520,28 @@ terminated/killed/reaped on failure, overflow, timeout or cancellation.
 See [the walkthrough](trying-evaluation.md) for the two-policy-outcome comparison,
 exact checks, analysis-only test selection and host process settings, and
 [the acceptance record](evaluation-acceptance.md) for EV-01–EV-24 evidence and
-platform/scope limitations. `list_policies` remains the next increment.
+platform/scope limitations.
+
+## Policy listing (L1a–L1d)
+
+Specification 003 adds `list_policies` from the evaluator's packaged catalog,
+without new dependencies or OPA/plan access. The catalog explicitly records empty
+policy-specific configuration requirements for AWS-RDS-001. Internal reasons stay
+private; existing analysis/evaluation report contracts and Rego decisions remain
+unchanged. The listing service uses a separate one-request slot, an executor for
+catalog/projection/UTF-8 size work, a 65,536-byte public report limit and protected
+worker cleanup on cancellation. No new CLI configuration is required.
+
+Verified on 2026-10-19: **702 Python tests, no skips**, **7 Rego tests**, Ruff
+lint/format and locked dependency checks. See the
+[listing acceptance record](listing-acceptance.md) for installed-package checks and
+LP-01–LP-14 evidence. Use the [listing walkthrough](trying-listing.md) or run:
+
+```sh
+uv run --locked --no-editable python examples/client.py --list-policies
+uv run --locked --no-editable python examples/client.py --list-policies --legacy
+```
+
+The saved response is `examples/reports/policy-list.json`. `--list-tools` continues
+to discover MCP functions, whereas `--list-policies` discovers governance rules.
+All three tools are now exposed; expanded policy coverage remains future work.

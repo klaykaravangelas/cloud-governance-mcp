@@ -56,6 +56,7 @@ async def test_real_sdk_stdio_discovery_analysis_safe_errors_and_shutdown(
             assert [tool.name for tool in discovery.tools] == [
                 TOOL_NAME,
                 "evaluate_terraform_policies",
+                "list_policies",
             ]
             tool = discovery.tools[0]
             assert tool.input_schema["additionalProperties"] is False
@@ -154,7 +155,35 @@ async def test_raw_stdio_frames_have_safe_pre_handler_errors_and_protocol_only_s
         assert [tool["name"] for tool in listing["result"]["tools"]] == [
             TOOL_NAME,
             "evaluate_terraform_policies",
+            "list_policies",
         ]
+
+        # Exercise raw null and omitted arguments; SDK Client normally omits None.
+        for request_id, params in [
+            (20, {"name": "list_policies"}),
+            (21, {"name": "list_policies", "arguments": None}),
+            (22, {"name": "list_policies", "arguments": {}}),
+        ]:
+            result = await exchange(request_id, "tools/call", params)
+            assert result["result"]["isError"] is False
+            assert (
+                result["result"]["structuredContent"]["policies"][0]["policy_id"]
+                == "AWS-RDS-001"
+            )
+
+        for request_id, arguments in [
+            (23, ["SENTINEL"]),
+            (24, "SENTINEL"),
+            (25, 1),
+            (26, True),
+        ]:
+            result = await exchange(
+                request_id,
+                "tools/call",
+                {"name": "list_policies", "arguments": arguments},
+            )
+            assert result["error"]["code"] == -32602
+            assert result["error"]["message"] == "Invalid request parameters"
 
         # These fail protocol validation before our handler. The SDK must use its
         # fixed INVALID_PARAMS response, never Pydantic excerpts or input keys.

@@ -6,6 +6,10 @@ Specification 002 was approved for implementation on 2026-10-19. E1–E5 add
 canonical HashiCorp AWS provider. Policy listing and expanded policy coverage
 remain outside this increment. No AWS connectivity or Terraform execution exists.
 
+This is the E5 checkpoint record. Specification 003 subsequently adds policy
+listing and updates runnable-server discovery to three tools; see
+[listing evidence](listing-acceptance.md) for current regression verification.
+
 ## Verification result
 
 The full Python suite passed: **643 tests, no skips** (26.01 seconds). Ruff lint
@@ -85,4 +89,5 @@ slow filesystem read; cancellation joins them before releasing admission.
 The policy does not resolve cluster associations, inspect live databases, verify
 KMS configuration or certify unsupported resources. Missing/unknown/sensitive
 inputs and incomplete plans remain explicit. A pass covers only selected policy
-scope in the supplied plan. L1 and the remaining v0.1 policies remain planned.
+scope in the supplied plan. At E5, L1 and expanded policies were planned; L1 is now
+implemented separately, while expanded v0.1 policies remain planned.

@@ -26,8 +26,9 @@ async def run_client(
     evaluate: bool = False,
     opa_path: Path | None = None,
     policy_ids: list[str] | None = None,
+    list_policies: bool = False,
 ) -> int:
-    """Discover tools or call analysis/evaluation; display only public results."""
+    """Discover tools or call governance tools; display only public results."""
     arguments = ["-I", "-m", "cloud_governance_mcp", "--allowed-root", str(root)]
     if opa_path is not None:
         arguments.extend(["--opa-path", str(opa_path.resolve())])
@@ -42,11 +43,16 @@ async def run_client(
         if list_tools:
             print(json.dumps([tool.name for tool in tools.tools], indent=2))
             return 0
-        tool_arguments = {"plan_path": plan_path}
+        # Policy discovery takes no plan argument and never triggers evaluation.
+        tool_arguments = {} if list_policies else {"plan_path": plan_path}
         if evaluate and policy_ids is not None:
             tool_arguments["policy_ids"] = policy_ids
         result = await client.call_tool(
-            "evaluate_terraform_policies" if evaluate else "analyze_terraform_plan",
+            "list_policies"
+            if list_policies
+            else (
+                "evaluate_terraform_policies" if evaluate else "analyze_terraform_plan"
+            ),
             tool_arguments,
         )
         if result.is_error:
@@ -56,7 +62,7 @@ async def run_client(
                     print(content.text, file=sys.stderr)
             return 1
         if result.structured_content is None:
-            print("The server returned no structured analysis.", file=sys.stderr)
+            print("The server returned no structured result.", file=sys.stderr)
             return 1
         print(json.dumps(result.structured_content, indent=2, ensure_ascii=False))
         return 0
@@ -76,15 +82,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="mixed_nested.json",
         help="Literal plan path within the allowed root.",
     )
-    parser.add_argument(
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument(
         "--list-tools",
         action="store_true",
         help="Print discovered tool names instead of analyzing a plan.",
     )
-    parser.add_argument(
+    action.add_argument(
         "--evaluate",
         action="store_true",
         help="Evaluate the selected plan using real OPA.",
+    )
+    action.add_argument(
+        "--list-policies",
+        action="store_true",
+        help="List available governance rules without reading a plan or invoking OPA.",
     )
     parser.add_argument("--opa-path", type=Path, help="Operator path to pinned OPA.")
     parser.add_argument(
@@ -109,6 +121,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 evaluate=arguments.evaluate,
                 opa_path=arguments.opa_path,
                 policy_ids=arguments.policy_ids,
+                list_policies=arguments.list_policies,
             )
         )
     except KeyboardInterrupt:

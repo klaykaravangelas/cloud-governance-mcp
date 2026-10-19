@@ -15,10 +15,14 @@ complete. The user approved Specification 002 and authorized implementation.
 Read `docs/specifications/evaluate-terraform-policies.md` for E1–E5 and EV-01–EV-24.
 Evaluation implements one standalone RDS encryption policy using OPA 1.21.2;
 see `docs/trying-evaluation.md`, `docs/opa-setup.md` and the evaluation acceptance
-record. Continue supporting manual testing. L1 (policy listing) is next, outside
-Specification 002; do not add it while finishing evaluation.
+record. The user authorized Specification 003 implementation;
+`docs/specifications/list-policies.md` defines completed tasks L1a–L1d and cases
+LP-01–LP-14. It exposes metadata from the existing catalog without OPA or plan
+access. See `docs/trying-listing.md` and `docs/listing-acceptance.md`. Continue
+supporting manual testing. M1 (expanded RDS coverage) is the next planned increment;
+it needs a separate specification and is outside this listing increment.
 Use `docs/trying-analysis.md` and `docs/analysis-acceptance.md` for the walkthrough
-and AN-01–AN-15 evidence. The runtime exposes analysis and evaluation; only AWS-RDS-001 is implemented.
+and AN-01–AN-15 evidence. The runtime exposes all three tools; only AWS-RDS-001 is implemented.
 See `docs/development.md` for setup and completed checks.
 Complete each increment's checks before
 continuing; no additional approval gate is implied between increments.
@@ -81,14 +85,14 @@ continuing; no additional approval gate is implied between increments.
   installed/pinned SDK generation; bootstrap locks MCP 2.3.0. A6 uses its public
   low-level `mcp.server.Server`, not the `MCPServer` decorator layer: explicit
   Pydantic schemas/validation avoid input-bearing SDK argument errors/logs.
-  `server.create_server(analysis, evaluation)` creates two tools; an analysis-only
+  `server.create_server(analysis, evaluation, listing)` creates three tools; an analysis-only
   injection remains supported for isolated tests. `run_stdio` serves them.
   Return both MCP text and structured content from the same validated public
   report. Return fixed `is_error` tool results; unknown tools are fixed protocol
   errors. Keep unexpected exception details away from SDK crash logging.
 - `__main__.py` and the `cloud-governance-mcp` console script own startup. Require
   repeatable `--allowed-root` and validate all four limit options. Pin roots before
-  SDK serving; close after both services drain. Evaluation has separate settings,
+  SDK serving; close after handlers drain. Evaluation has separate settings,
   one independent active slot/no queue, lazy bounded version verification and no
   implicit executable. Missing OPA never disables analysis. See the evaluation
   specification for the additional CLI budgets and fixed error/report mapping. CLI errors replace argparse's echoed
@@ -124,6 +128,11 @@ continuing; no additional approval gate is implied between increments.
   policies or user-provided Rego.
 - Keep IDs, metadata, and explanations consistent through one policy catalog.
   Structured findings use stable reason codes and safe message templates.
+- Listing uses `PolicyListingService` with lazy package-only catalog loading,
+  independent nonblocking admission and cancellation-safe worker cleanup. Its
+  complete compact UTF-8 report is capped at 65,536 bytes; it never loads plans
+  or probes OPA. Publish only `ListedPolicy` fields, including explicit empty
+  `required_configuration` for AWS-RDS-001, without internal reason templates.
 
 ## Code comments and docstrings
 

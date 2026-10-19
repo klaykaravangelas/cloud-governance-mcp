@@ -96,6 +96,7 @@ class PolicyMetadata(ContractModel):
     supported_resource_types: list[IdentityText] = Field(min_length=1, max_length=1)
     required_paths: list[AttributePath]
     scope_description: IdentityText
+    required_configuration: list[IdentityText] = Field(max_length=0)
     reasons: dict[ReasonCode, ReasonTemplate]
 
 

@@ -32,6 +32,13 @@ from cloud_governance_mcp.evaluation_models import (
     validate_evaluation_input,
 )
 from cloud_governance_mcp.evaluation_service import EvaluationService
+from cloud_governance_mcp.listing import PolicyListingService
+from cloud_governance_mcp.listing_errors import ListingCode, ListingFailure
+from cloud_governance_mcp.listing_models import (
+    ListPoliciesInput,
+    PolicyList,
+    validate_listing_input,
+)
 from cloud_governance_mcp.models import (
     AnalyzeTerraformPlanInput,
     PlanAnalysis,
@@ -41,6 +48,7 @@ from cloud_governance_mcp.service import AnalysisService
 
 TOOL_NAME = "analyze_terraform_plan"
 EVALUATION_TOOL_NAME = "evaluate_terraform_policies"
+LISTING_TOOL_NAME = "list_policies"
 _DESCRIPTION = (
     "Summarize resource identities and proposed actions from a local Terraform "
     "plan JSON file in an allowed directory. Returns no resource attribute "
@@ -58,7 +66,9 @@ def _tool_error(code: ErrorCode) -> CallToolResult:
 
 
 def create_server(
-    service: AnalysisService, evaluation_service: EvaluationService | None = None
+    service: AnalysisService,
+    evaluation_service: EvaluationService | None = None,
+    listing_service: PolicyListingService | None = None,
 ) -> Server:
     """Register read-only tools around independently testable services.
 
@@ -100,10 +110,30 @@ def create_server(
             )
         )
 
+    if listing_service is not None:
+        tools.append(
+            Tool(
+                name=LISTING_TOOL_NAME,
+                description=(
+                    "List the bundled governance policies available for Terraform plan "
+                    "evaluation, including their versions, severity, supported resources, "
+                    "scope and required configuration. Does not read plans or invoke OPA."
+                ),
+                input_schema=ListPoliciesInput.model_json_schema(),
+                output_schema=PolicyList.model_json_schema(),
+                annotations=ToolAnnotations(
+                    read_only_hint=True,
+                    destructive_hint=False,
+                    idempotent_hint=True,
+                    open_world_hint=False,
+                ),
+            )
+        )
+
     async def list_tools(
         ctx: ServerRequestContext, params: PaginatedRequestParams | None
     ) -> ListToolsResult:
-        """Advertise configured, implemented tools; policy listing remains future work."""
+        """Advertise configured, implemented tools without loading policy assets."""
         return ListToolsResult(tools=tools)
 
     async def call_tool(
@@ -120,7 +150,7 @@ def create_server(
                     await service.analyze(request.plan_path)
                 )
                 failed = False
-            else:
+            elif params.name == EVALUATION_TOOL_NAME:
                 request = validate_evaluation_input(params.arguments)
                 report = EvaluationReport.model_validate(
                     await evaluation_service.evaluate(
@@ -128,6 +158,12 @@ def create_server(
                     )
                 )
                 failed = bool(report.errors)
+            else:
+                validate_listing_input(params.arguments)
+                report = PolicyList.model_validate(
+                    await listing_service.list_policies()
+                )
+                failed = False
             # Both channels describe exactly the same validated public object.
             # Masks and raw plan values never reach this module.
             text = report.model_dump_json()
@@ -135,6 +171,14 @@ def create_server(
                 content=[TextContent(type="text", text=text)],
                 structured_content=json.loads(text),
                 is_error=failed,
+            )
+        except ListingFailure as error:
+            # Reconstruct fixed prose instead of forwarding arbitrary exception text.
+            return CallToolResult(
+                content=[
+                    TextContent(type="text", text=str(ListingFailure(error.code)))
+                ],
+                is_error=True,
             )
         except EvaluationFailure as error:
             return CallToolResult(
@@ -146,6 +190,16 @@ def create_server(
             # Includes invalid service results and serialization failures. SDK
             # crash logging must not receive their raw exceptions/tracebacks.
             _LOGGER.error("Tool failed code=INTERNAL_ERROR request_id=%s", uuid4().hex)
+            if params.name == LISTING_TOOL_NAME:
+                return CallToolResult(
+                    content=[
+                        TextContent(
+                            type="text",
+                            text=str(ListingFailure(ListingCode.INTERNAL_ERROR)),
+                        )
+                    ],
+                    is_error=True,
+                )
             if params.name == EVALUATION_TOOL_NAME:
                 return CallToolResult(
                     content=[
@@ -161,7 +215,7 @@ def create_server(
     return Server(
         "cloud-governance-mcp",
         version=version("cloud-governance-mcp"),
-        instructions="Read-only Terraform plan analysis and bundled policy evaluation within operator-configured directories.",
+        instructions="Read-only Terraform plan analysis and bundled policy evaluation within operator-configured directories, plus policy metadata listing without plan access or OPA.",
         on_list_tools=list_tools,
         on_call_tool=call_tool,
     )

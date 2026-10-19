@@ -1,7 +1,8 @@
 # Proposed architecture
 
 Status: first analysis increment A1–A7 implemented and verified on macOS arm64.
-Specification 002 now implements the first evaluation policy; policy listing is next.
+Specification 002 implements the first evaluation policy. Specification 003
+implements catalog-only policy listing; expanded policy coverage remains next.
 Updated: 2026-10-19.
 
 ## Repository inspection
@@ -47,7 +48,14 @@ The implemented [Specification 002](specifications/evaluate-terraform-policies.m
 for E1–E5 refines the evaluation design below. It defines explicit required-value
 states, standalone-only RDS scope, one active evaluation with no queue, complete
 policy/resource-pair validation and atomic engine failures. Analysis and evaluation are exposed;
-listing and expanded policy coverage remain future increments.
+listing follows in Specification 003; expanded policy coverage remains future work.
+
+[Specification 003](specifications/list-policies.md) implements listing: a
+strict empty input, public metadata projection, lazy catalog-only service,
+65,536-byte response limit and independent one-active-request admission. It
+requires neither plan loading nor OPA, while preserving normal startup root
+requirements. The catalog remains the shared source of selectable policy IDs and
+metadata; internal reason templates do not become a public listing contract.
 
 | Increment | User-visible tool | Components introduced |
 | --- | --- | --- |
@@ -70,6 +78,9 @@ src/cloud_governance_mcp/
   models.py               # Pydantic core contracts; no MCP imports
   evaluation_models.py    # strict policy/check/report contracts
   evaluation_errors.py    # safe fixed evaluation failures
+  listing_models.py       # strict public catalog projection
+  listing_errors.py       # fixed listing failures
+  listing.py              # catalog-only projection/service
   projection.py           # optional masked desired-state policy inputs
   catalog.py              # lazy package-only metadata loading
   files.py                # contained, bounded JSON reads
@@ -101,19 +112,20 @@ directory.
 
 ## Components and interfaces
 
-The loader, adapter, both services, catalog, OPA engine and reporting are
-implemented. The catalog is internal; the listing MCP tool remains planned.
+The loader, adapter, three services, catalog, OPA engine and reporting are
+implemented. Listing exposes a public metadata projection of the shared catalog.
 
 | Component | Interface | Responsibility |
 | --- | --- | --- |
 | File loader | `RestrictedPlanLoader.read_plan(plan_path: str) -> dict[str, JsonValue]` | Implemented in A3: context-managed pinned roots, component-relative no-follow opens, regular-file checks, bounded bytes/depth, strict JSON decoding; no Terraform or policy logic. |
 | Terraform adapter | `TerraformPlanAdapter.normalize(plan: object) -> ResourceSnapshot` | Implemented in A4: validate consumed plan structures, recursively merge identities/actions by exact address, extract typed masks and fixed warnings. Discard attribute values; a redacted desired-value projection belongs to evaluation. |
 | Analysis builder | `analysis.summarize(snapshot: ResourceSnapshot) -> PlanAnalysis` | Implemented in A5: deterministic public identities, action/type/mode counts, managed changing count, and complete/partial status from coverage warnings. Revalidate internal contracts; omit masks and values. |
-| Policy catalog | `list_policies() -> list[PolicyMetadata]` | One metadata source for listing, applicability, selection, and safe messages. |
+| Policy catalog | `load_catalog() -> PolicyCatalog`; `catalog.select(ids)` | Implemented shared metadata source for applicability, selection and safe messages. Internal reason templates stay private. |
+| Policy listing | `await PolicyListingService.list_policies() -> PolicyList` | Specification 003: project public metadata from the same catalog without plan or OPA access; validate/bound output and sanitize failures. |
 | Policy engine | `await OpaEngine.evaluate(input: EvaluationInput, catalog: PolicyCatalog) -> EngineReport` | Execute trusted Rego; validate exhaustive check results and sanitize failures. |
 | Report builder | `build_report(snapshot, engine_result) -> EvaluationReport` | Aggregate coverage and construct safe findings from trusted templates. |
 | Governance services | `await AnalysisService.analyze(plan_path) -> PlanAnalysis`; `await EvaluationService.evaluate(plan_path, policy_ids=None) -> EvaluationReport` | Independent bounded admission, shared safe loader/adapter, off-loop work and serialization budgets, cancellation cleanup and safe errors. |
-| MCP tools | `create_server(service) -> mcp.server.Server`; `run_stdio(server)` | Implemented in A6: analysis and evaluation tools, strict model-derived schemas, validated arguments/results, identical safe text/structured output, read-only hints and fixed tool errors. |
+| MCP tools | `create_server(analysis, evaluation=None, listing=None) -> mcp.server.Server`; `run_stdio(server)` | All three tools: strict model-derived schemas, validated arguments/results, identical safe text/structured output, read-only hints and fixed tool errors. Optional injection preserves isolated analysis tests. |
 
 The service receives loader, adapter, and engine dependencies through ordinary
 constructors/functions. Introduce a small `Protocol` for adapters/engines when it
@@ -143,9 +155,12 @@ Malformed protocol envelopes remain SDK-managed and are verified to produce safe
 `INVALID_PARAMS` responses. Unknown tool names receive a fixed protocol error;
 known-tool failures return `isError=true` without a structured success object.
 
-The CLI creates two services sharing one loader, enters SDK stdio on the asyncio backend, then
-closes pinned roots after handlers finish. Root/limit arguments are operator-only;
-no transport selector, logging-level tool, policy-listing tool, shell or AWS client exists.
+The CLI creates analysis/evaluation services sharing one loader and an independent
+listing service, enters SDK stdio on the asyncio backend, then closes pinned roots
+after handlers finish. Listing reads only packaged catalog metadata in a worker,
+has a separate one-request slot and 65,536-byte output budget, and needs no OPA.
+Root/limit arguments are operator-only; no transport selector, logging-level tool,
+shell or AWS client exists.
 Argument-parser diagnostics are fixed to avoid echoing paths/options. Imports do
 not start serving. SDK debug logging stays disabled and stdout carries protocol
 frames only. Both modern and legacy SDK clients are tested; protocol framing,
@@ -167,7 +182,8 @@ unsupported/invalid-input errors rather than guessed interpretations.
 | `ResourceSnapshot` | `schema_version`, `source_kind="terraform_plan"`, source format version, resources, coverage warnings. Schema version is internal and distinct from Terraform's. |
 | `ResourceAnalysis` | Public `address`, `provider_name`, `resource_type`, `name`, `mode`, `module_address`, optional index/previous address, ordered `actions`, derived category, and source provenance. No attribute values or masks. |
 | `NormalizedResource` | Wraps `resource: ResourceAnalysis` with mask paths and uncertainty metadata. Evaluation opts into `desired_state`, retaining only a known encryption boolean and value-free scope/uncertainty states. Analysis leaves it absent. |
-| `PolicyMetadata` | Stable `id`, title, description, severity (`low/medium/high/critical`), resource types, required paths/configuration, and version. |
+| `PolicyMetadata` | Current AWS-RDS-001 ID/version, title, description, high severity, supported providers/types, required paths, explicit empty policy configuration requirements and internal reason templates. |
+| `PolicyList` / `ListedPolicy` | Versioned public metadata allowlist; excludes enabled flags, reason templates and configured values. Same catalog as evaluation. |
 | `CheckResult` | Policy ID, resource address, outcome (`pass/fail/indeterminate/not_applicable`), trusted reason code, and optional attribute path. No arbitrary evidence value or free-form plan-derived explanation. |
 | `EvaluationError` | Stable code, safe message, optional policy ID; never a violation. Examples: `OPA_NOT_FOUND`, `OPA_TIMEOUT`, `OPA_EXECUTION_ERROR`, `OPA_OUTPUT_INVALID`. |
 | `Finding` | Failed check's policy ID, severity, resource address/type, explanation, remediation, and safe attribute path. Messages come from catalog templates and reason codes. |
@@ -385,7 +401,7 @@ the public summary builder and async service with limits/admission/cleanup. All
 521 tests pass. A6 implements the MCP analysis tool and stdio; A7 adds the
 [hands-on client walkthrough](trying-analysis.md), saved report and
 [acceptance evidence](analysis-acceptance.md). Analysis and the first standalone RDS policy are
-complete; listing and expanded policy coverage remain planned. See
+complete; listing is also implemented, while expanded policy coverage remains planned. See
 [development setup](development.md). OPA 1.21.2 is selected and verified on macOS arm64; see
 [OPA setup](opa-setup.md) and [evaluation evidence](evaluation-acceptance.md). No publication is included in these increments, and no extra
 approval gate is imposed between later tested increments.

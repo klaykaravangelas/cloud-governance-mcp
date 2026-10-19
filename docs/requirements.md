@@ -1,6 +1,6 @@
 # Requirements and acceptance criteria
 
-Status: analysis A1–A7 and first-policy evaluation E1–E5 complete; remaining v0.1 scope planned.
+Status: analysis A1–A7, evaluation E1–E5 and listing L1a–L1d complete; expanded v0.1 policies planned.
 Updated: 2026-10-19.
 
 ## Purpose and scope
@@ -16,13 +16,17 @@ analysis specification is [approved](specifications/analyze-terraform-plan.md).
 Bootstrap, typed contracts, contained file loading, Terraform normalization, and
 the analysis service/summaries and MCP stdio interface are complete. A7 adds the
 [client walkthrough](trying-analysis.md) and [acceptance evidence](analysis-acceptance.md).
-Evaluation now implements standalone RDS encryption. Policy listing, expanded
-coverage and the complete v0.1 MVP remain planned.
+Evaluation implements standalone RDS encryption and listing exposes its catalog.
+Expanded coverage and the complete v0.1 MVP remain planned.
 
 [Specification 002](specifications/evaluate-terraform-policies.md) defines the implemented
 first evaluation increment and EV-01–EV-24 acceptance cases. See
 [evidence](evaluation-acceptance.md). Only standalone RDS encryption is currently
 implemented; the rest of the policy catalog below remains planned.
+
+[Specification 003](specifications/list-policies.md) defines the implemented
+listing response, catalog-only execution and LP-01–LP-14 acceptance cases. See
+[listing evidence](listing-acceptance.md).
 
 ## Tool responsibilities and progression
 
@@ -45,7 +49,7 @@ claims, and listing does not evaluate a plan.
 | FR-03 | Parse resource changes throughout the plan. | Root and nested-module addresses, indexed instances, provider identity, resource mode/type, and ordered actions are preserved. Both replacement orderings are recognized; deletion is not mistaken for a missing desired object. |
 | FR-04 | Expose `analyze_terraform_plan(plan_path)`. | Return resource identities/actions, counts by action/type, replacements counted once, total observed resources, and coverage warnings without attribute values. Include create, update, delete, replacement, no-op, and read cases. |
 | FR-05 | Expose `evaluate_terraform_policies(plan_path, policy_ids?)`. | Apply all enabled policies by default or a nonempty bounded selection of known IDs. Return validated results with resource address, policy ID, severity, explanation, remediation, and coverage. Unknown IDs are input errors. Findings are deterministic. |
-| FR-06 | Expose `list_policies()`. | Return implemented policy IDs, names, descriptions, severity, supported resource types, and required configuration from the same catalog used for evaluation. Planned policies are not listed as available. |
+| FR-06 | Expose `list_policies()`. | With no arguments, return implemented policy IDs, versions, titles, descriptions, severity, supported providers/types, required paths, scope and policy-specific configuration requirements from the same catalog used for evaluation. Invoke no OPA process and read no plan. Planned policies are not listed as available. See Specification 003 for the response and safe failures. |
 | FR-07 | Evaluate with real OPA/Rego. | Python invokes a configured OPA executable with a fixed query and trusted policy assets. Tests execute Rego with OPA; a Python substitute cannot satisfy acceptance. |
 | FR-08 | Separate policy decisions from execution failures. | Policy outcomes are `pass`, `fail`, `indeterminate`, or `not_applicable`. Missing OPA, timeout, compilation/runtime errors, undefined entrypoint, and invalid output are evaluation errors, never compliance passes. |
 | FR-09 | Preserve uncertainty and sensitivity. | Unknown and sensitive subtrees retain path metadata, including list indices and whole-subtree markers. Redacted or unknown inputs never become `false`, an empty collection, or a positive compliance result. |
@@ -133,7 +137,7 @@ OPA-specific and compliance-reporting criteria apply when evaluation is added.
 
 The tested loader/parser now supports `evaluate_terraform_policies` with one RDS
 encryption policy, real OPA tests, a catalog, capabilities, runtime limits and
-structured findings. Next expose `list_policies` from that catalog, then
+structured findings. `list_policies` now exposes that same catalog. Next
 incrementally complete the four v0.1 policy families. See
 [the implementation plan](implementation-plan.md) for task boundaries.
 

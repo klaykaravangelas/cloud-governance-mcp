@@ -1,7 +1,8 @@
 # Implementation plan
 
-Status: Specifications 001 and 002 implemented; A1–A7 and E1–E5 complete.
-L1 (policy listing) is the next increment. Updated: 2026-10-19.
+Status: Specifications 001–003 implemented; A1–A7, E1–E5 and L1a–L1d complete.
+M1 (expanded RDS coverage) is the next planned increment and needs a specification.
+Updated: 2026-10-19.
 
 Build in this order: `analyze_terraform_plan`, `evaluate_terraform_policies`,
 `list_policies`, then expanded policy coverage. Each task has a narrow result and
@@ -68,7 +69,8 @@ The user approved and authorized implementing the next specification;
 [Specification 002](specifications/evaluate-terraform-policies.md) now defines
 evaluation contracts, the standalone RDS policy, OPA boundaries and EV-01–EV-24.
 E1–E5 now implement it; [evaluation acceptance](evaluation-acceptance.md) records
-verification. L1 is the next increment.
+verification. [Specification 003](specifications/list-policies.md) implements
+L1a–L1d; [listing acceptance](listing-acceptance.md) records LP-01–LP-14 evidence.
 Dependency installation occurred in A1; specification drafting requires no
 dependency installation.
 Task completion checks below are technical checkpoints, not additional user
@@ -86,9 +88,9 @@ approval gates.
 | A6: Expose analysis over MCP (complete) | A5 | `server.py`: public SDK low-level `Server`, exact core schemas, explicit input/result validation, one tool, read-only hints and safe failures. `__main__.py`/console script: required roots, limits and stdio lifecycle. | Completed: 511 total tests pass, including 84 new SDK/CLI/stdio cases. Both auto/legacy discovery and output contracts pass; malformed inputs and pre-handler errors omit secrets. Real subprocesses work outside the checkout, recover from errors and shut down cleanly; SDK cancellation drains real file cleanup. Ruff and installed-wheel checks pass. |
 | A7: Verify and document analysis (complete) | A6 | `docs/trying-analysis.md`, `examples/client.py`, saved public report, README, AN-01–AN-15 evidence, source docs/lock inclusion and independent wheel verification. | Completed: 521 tests pass (10 new walkthrough cases), Ruff/lock/environment/dependency checks and source/wheel builds pass. Fresh installed SDK stdio works outside the checkout; walkthrough commands/outputs are tested. Verified on macOS arm64; Linux and live/generated plan campaigns remain unverified. |
 
-Completed checkpoint: a client can ask what a plan changes and receive a tested,
-safe summary. Only `analyze_terraform_plan` is registered. No policy assets,
-evaluator, catalog, policy-listing tool, or compliance reports exist yet.
+At the completed A7 checkpoint, a client could ask what a plan changes and receive
+a tested, safe summary. Only `analyze_terraform_plan` was registered at that stage;
+the evaluation components below have since been implemented.
 
 ## Increment 2: evaluate one policy
 
@@ -97,7 +99,7 @@ Its decisions refine the earlier architecture proposals:
 one active evaluation with no queue, explicit policy projection states, complete
 policy/resource-pair validation and atomic engine failures. Install/pin OPA during
 implementation, not specification drafting. Analysis and evaluation are exposed;
-listing and expanded coverage remain subsequent increments.
+listing follows in increment 3; expanded coverage remains subsequent work.
 
 | Task | Depends on | Deliverable | Verification / done when |
 | --- | --- | --- | --- |
@@ -113,9 +115,21 @@ evaluation adds compliance decisions. Neither MCP tool calls the other.
 
 ## Increment 3: list implemented policies
 
+[Specification 003](specifications/list-policies.md) defines the implemented public
+metadata projection, strict empty input, safe errors and LP-01–LP-14. The user
+authorized implementation on 2026-10-19. The parent L1 increment is complete:
+
 | Task | Depends on | Deliverable | Verification / done when |
 | --- | --- | --- | --- |
-| L1: Expose and verify catalog | E5 | Add `list_policies` from the catalog already used by evaluation; update three-tool docs/examples. | SDK/stdio tests discover all three tools. Listing returns only AWS-RDS-001 with matching description/severity/supported types and selection metadata. It invokes no OPA process and works when OPA is unavailable. Planned policy entries are not advertised. |
+| L1a (complete): Contracts and catalog metadata | E5; approved Specification 003 | Strict listing input/output/error models, public projection and explicit empty policy configuration requirements in the existing catalog. | LP-02–LP-05 and LP-07–LP-09: metadata agrees with evaluation, internal templates stay private and unsupported catalog scope fails safely. |
+| L1b (complete): Listing service | L1a | Lazy catalog-only service, off-loop work, fixed output budget, independent nonblocking admission and cancellation cleanup. | LP-06–LP-11: works without OPA or plan access, deterministic bounded output and safe worker recovery. |
+| L1c (complete): MCP wiring | L1b | Register the third tool, inject its service at startup and preserve existing tool contracts. | LP-01–LP-03, LP-06, LP-08–LP-09 and LP-12: strict schemas, safe errors and matching text/structured output through SDK auto/legacy and real stdio. |
+| L1d (complete): Walkthrough and package verification | L1c | Listing client flag/saved report, walkthrough/acceptance evidence and three-tool documentation; retain separate MCP tool discovery. | LP-12–LP-14: listed IDs work with real evaluation, full Python/Rego regression checks pass and installed packages work outside the checkout. |
+
+Completion checkpoint: clients can discover all three tools and list only the
+implemented standalone RDS rule from the evaluator's catalog. Listing does not
+invoke OPA or imply that its runtime is configured. L1a–L1d together complete L1;
+expanded policy coverage remains separate.
 
 ## Subsequent v0.1 policy increments
 

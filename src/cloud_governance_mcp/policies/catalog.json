@@ -24,6 +24,7 @@
           ]
         ],
         "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved.",
+        "required_configuration": [],
         "reasons": {
           "DATA_SOURCE_SKIPPED": {
             "outcome": "not_applicable",

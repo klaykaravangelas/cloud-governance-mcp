@@ -18,6 +18,7 @@ from cloud_governance_mcp.config import (
 from cloud_governance_mcp.errors import ConfigurationError, UnsupportedPlatformError
 from cloud_governance_mcp.evaluation_service import EvaluationService
 from cloud_governance_mcp.files import RestrictedPlanLoader
+from cloud_governance_mcp.listing import PolicyListingService
 from cloud_governance_mcp.server import create_server, run_stdio
 from cloud_governance_mcp.service import AnalysisService
 
@@ -104,7 +105,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         with RestrictedPlanLoader(settings) as loader:
             service = AnalysisService(settings, loader=loader)
             evaluation = EvaluationService(settings, evaluation_settings, loader=loader)
-            anyio.run(run_stdio, create_server(service, evaluation), backend="asyncio")
+            listing = PolicyListingService()
+            anyio.run(
+                run_stdio,
+                create_server(service, evaluation, listing),
+                backend="asyncio",
+            )
         return 0
     except (ConfigurationError, UnsupportedPlatformError) as error:
         print(str(error), file=sys.stderr)

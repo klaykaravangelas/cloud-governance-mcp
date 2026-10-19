@@ -1,10 +1,11 @@
 # Try Terraform policy evaluation
 
-The server now exposes `analyze_terraform_plan` and
-`evaluate_terraform_policies`. Only policy **AWS-RDS-001**, high severity, is
+The server exposes `analyze_terraform_plan`, `evaluate_terraform_policies` and
+`list_policies`. Only policy **AWS-RDS-001**, high severity, is
 implemented: explicit storage encryption for standalone `aws_db_instance`
-resources from the canonical HashiCorp AWS provider. `list_policies` and other
-policy families remain planned.
+resources from the canonical HashiCorp AWS provider. The
+[listing tool](trying-listing.md) describes this rule; other policy families remain
+planned.
 
 ## 1. Prepare the local runtime
 
@@ -19,10 +20,10 @@ uv run --locked --no-editable python examples/client.py --list-tools
 Expected tools:
 
 ```json
-["analyze_terraform_plan", "evaluate_terraform_policies"]
+["analyze_terraform_plan", "evaluate_terraform_policies", "list_policies"]
 ```
 
-Listing tools and analyzing plans still work without OPA. The server never
+Listing tools/policies and analyzing plans still work without OPA. The server never
 downloads it or looks it up in PATH automatically.
 
 ## 2. Compare known encryption outcomes

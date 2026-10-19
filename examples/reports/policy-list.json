@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "policies": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "policy_version": "1.0.0",
+      "title": "RDS storage encryption",
+      "description": "Require explicit storage encryption for standalone AWS RDS instances.",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_db_instance"
+      ],
+      "required_paths": [
+        [
+          "storage_encrypted"
+        ],
+        [
+          "cluster_identifier"
+        ]
+      ],
+      "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved.",
+      "required_configuration": []
+    }
+  ]
+}
