@@ -11,19 +11,47 @@ from cloud_governance_mcp.models import (
     NormalizedResource,
     ResourceSnapshot,
     UncertainEncryption,
+    UnresolvedAssociation,
 )
+from cloud_governance_mcp.policy_definitions import AWS_PROVIDER as AWS_PROVIDER
+from cloud_governance_mcp.policy_definitions import (
+    RDS_RESOURCE_TYPES as RDS_RESOURCE_TYPES,
+)
+from cloud_governance_mcp.policy_definitions import RESOURCE_TYPES
 
-AWS_PROVIDER = "registry.terraform.io/hashicorp/aws"
+
+def attribute_state(
+    resource: NormalizedResource, desired: dict[str, object] | None, key: str
+) -> str:
+    """Classify a scalar field before reading it, including contradictory masks."""
+    for paths, label in (
+        (resource.sensitive_paths, "sensitive"),
+        (resource.unknown_paths, "unknown"),
+    ):
+        if any(not path or path[0] == key for path in paths):
+            return label
+    if not resource.unknown_metadata_complete:
+        return "unverified"
+    if desired is None:
+        return "unavailable"
+    if key not in desired:
+        return "missing"
+    return "null" if desired[key] is None else "known"
 
 
-def is_candidate(resource: NormalizedResource) -> bool:
+def is_candidate(
+    resource: NormalizedResource, policy_ids: list[str] | None = None
+) -> bool:
     """Classify scope without inspecting attributes or making a policy decision."""
     identity = resource.resource
     return (
         identity.mode == "managed"
         and identity.action_category != "delete"
         and identity.provider_name == AWS_PROVIDER
-        and identity.resource_type == "aws_db_instance"
+        and any(
+            identity.resource_type in RESOURCE_TYPES[p]
+            for p in (policy_ids if policy_ids is not None else ["AWS-RDS-001"])
+        )
     )
 
 
@@ -33,24 +61,15 @@ def project_desired(
     """Remove values covered by root/attribute masks before forming engine input."""
 
     def state(key: str) -> str:
-        # [] is an ancestor of every path; integer indices never equal keys.
-        for paths, label in (
-            (resource.sensitive_paths, "sensitive"),
-            (resource.unknown_paths, "unknown"),
-        ):
-            # A descendant mask contradicts a scalar boolean/string shape. It
-            # still blocks knowledge rather than letting a malformed plan pass.
-            if any(not path or path[0] == key for path in paths):
-                return label
-        if not resource.unknown_metadata_complete:
-            return "unverified"
-        if desired is None:
-            return "unavailable"
-        if key not in desired:
-            return "missing"
-        if desired[key] is None:
-            return "null"
-        return "known"
+        return attribute_state(resource, desired, key)
+
+    if resource.resource.resource_type == "aws_rds_cluster_instance":
+        # A member's exported encryption copy is never decision evidence.
+        return DesiredStateProjection(
+            scope="cluster_member",
+            encryption=UncertainEncryption(state="unavailable"),
+            association=UnresolvedAssociation(state="unavailable"),
+        )
 
     encryption_state = state("storage_encrypted")
     value = desired.get("storage_encrypted") if desired is not None else None
@@ -61,6 +80,8 @@ def project_desired(
         if encryption_state == "known"
         else UncertainEncryption(state=encryption_state)
     )
+    if resource.resource.resource_type == "aws_rds_cluster":
+        return DesiredStateProjection(scope="cluster", encryption=encryption)
     scope = state("cluster_identifier")
     if scope in {"missing", "null"}:
         scope = "standalone"
@@ -87,6 +108,7 @@ def to_evaluation_input(
                 resource_type=item.resource.resource_type,
                 mode=item.resource.mode,
                 action_category=item.resource.action_category,
+                ssh_state=item.ssh_state,
                 desired_state=item.desired_state
                 or DesiredStateProjection(
                     scope="unavailable",

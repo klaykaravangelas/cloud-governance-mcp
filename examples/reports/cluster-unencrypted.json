@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": null,
+  "evaluation_status": "complete",
+  "compliance_status": "fail",
+  "selected_policy_ids": [
+    "AWS-RDS-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "policy_version": "1.1.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance"
+      ],
+      "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred."
+    }
+  ],
+  "findings": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "severity": "high",
+      "resource_address": "aws_rds_cluster.example",
+      "resource_type": "aws_rds_cluster",
+      "reason_code": "RDS_ENCRYPTION_DISABLED",
+      "attribute_path": [
+        "storage_encrypted"
+      ],
+      "explanation": "RDS storage encryption is explicitly disabled.",
+      "remediation": "Configure storage encryption for the intended RDS resource."
+    },
+    {
+      "policy_id": "AWS-RDS-001",
+      "severity": "high",
+      "resource_address": "aws_rds_cluster_instance.member0",
+      "resource_type": "aws_rds_cluster_instance",
+      "reason_code": "RDS_CLUSTER_ENCRYPTION_DISABLED",
+      "attribute_path": [
+        "cluster_identifier"
+      ],
+      "explanation": "The associated cluster explicitly fails the storage encryption requirement.",
+      "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+    },
+    {
+      "policy_id": "AWS-RDS-001",
+      "severity": "high",
+      "resource_address": "aws_rds_cluster_instance.member1",
+      "resource_type": "aws_rds_cluster_instance",
+      "reason_code": "RDS_CLUSTER_ENCRYPTION_DISABLED",
+      "attribute_path": [
+        "cluster_identifier"
+      ],
+      "explanation": "The associated cluster explicitly fails the storage encryption requirement.",
+      "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+    }
+  ],
+  "indeterminate_checks": [],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 3,
+    "candidate_resources": 3,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 3,
+    "evaluated_checks": 3,
+    "unevaluated_checks": 0,
+    "applicable_checks": 3,
+    "passed": 0,
+    "failed": 3,
+    "indeterminate": 0,
+    "not_applicable": 0
+  }
+}

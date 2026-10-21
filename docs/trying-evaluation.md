@@ -1,11 +1,12 @@
 # Try Terraform policy evaluation
 
 The server exposes `analyze_terraform_plan`, `evaluate_terraform_policies` and
-`list_policies`. Only policy **AWS-RDS-001**, high severity, is
-implemented: explicit storage encryption for standalone `aws_db_instance`
-resources from the canonical HashiCorp AWS provider. The
-[listing tool](trying-listing.md) describes this rule; other policy families remain
-planned.
+`list_policies`. Two high-severity policies are implemented: **AWS-RDS-001**
+v1.1.0 checks standalone instances, clusters and conservatively resolved cluster
+members; **AWS-SG-001** v1.0.0 checks direct unrestricted SSH ingress in three
+Terraform representations. The [listing tool](trying-listing.md) describes both.
+Tags and S3 policies remain planned. This walkthrough selects RDS explicitly;
+see [the SSH walkthrough](trying-ssh.md) for network and combined-policy examples.
 
 ## 1. Prepare the local runtime
 
@@ -29,8 +30,8 @@ downloads it or looks it up in PATH automatically.
 ## 2. Compare known encryption outcomes
 
 ```sh
-uv run --locked --no-editable python examples/client.py --evaluate --plan-path encrypted_rds.json --opa-path .tools/opa/1.21.2/opa
-uv run --locked --no-editable python examples/client.py --evaluate --plan-path unencrypted_rds.json --opa-path .tools/opa/1.21.2/opa
+uv run --locked --no-editable python examples/client.py --evaluate --policy-id AWS-RDS-001 --plan-path encrypted_rds.json --opa-path .tools/opa/1.21.2/opa
+uv run --locked --no-editable python examples/client.py --evaluate --policy-id AWS-RDS-001 --plan-path unencrypted_rds.json --opa-path .tools/opa/1.21.2/opa
 ```
 
 Both requests complete normally. The encrypted plan reports `pass`; the other
@@ -46,8 +47,8 @@ These fixtures are synthetic; no Terraform or AWS execution is required.
 ## 3. Understand uncertainty and execution errors
 
 ```sh
-uv run --locked --no-editable python examples/client.py --evaluate --plan-path unknown_sensitive.json --opa-path .tools/opa/1.21.2/opa
-uv run --locked --no-editable python examples/client.py --evaluate --plan-path encrypted_rds.json
+uv run --locked --no-editable python examples/client.py --evaluate --policy-id AWS-RDS-001 --plan-path unknown_sensitive.json --opa-path .tools/opa/1.21.2/opa
+uv run --locked --no-editable python examples/client.py --evaluate --policy-id AWS-RDS-001 --plan-path encrypted_rds.json
 ```
 
 The first response is a safe report with indeterminate checks and partial plan
@@ -60,14 +61,17 @@ safe report on stderr. It does not mean encryption was disabled.
 the selected rules. Known violations take precedence over uncertain checks.
 Complete plans with no applicable resources are `not_applicable`, never `pass`.
 Partial plans conservatively cannot establish a pass. Unsupported resource counts
-and the policy scope explain what was excluded. Cluster-associated instances are
-indeterminate; cluster resources and other provider/type combinations are outside
-this first policy version.
+and the policy scope explain what was excluded. The legacy `aws_db_instance`
+association guard remains indeterminate. Actual `aws_rds_cluster_instance`
+members inherit only from a unique known same-plan cluster and compatible AWS
+ARN context; computed or ambiguous links stay indeterminate. Follow the
+[cluster walkthrough](trying-rds-clusters.md) for pass/fail/unknown-ARN examples.
 
 ## 4. Select a policy and use an AI host
 
 Add `--policy-id AWS-RDS-001` to explicitly select the rule; omission selects the
-enabled catalog. Empty, duplicate and unknown selections fail safely. Add
+enabled catalog: both IDs. Repeat `--policy-id` to select both explicitly.
+Empty, duplicate and unknown selections fail safely. Add
 `--legacy` to any example to test the older MCP initialization mode.
 
 Use an existing absolute plan directory and the absolute OPA path in the host's
@@ -104,10 +108,10 @@ uv run --locked --no-editable ruff format --check .
 Full evaluation/release verification fails if OPA is missing; it never silently
 skips real policy tests. Tests can select an alternate absolute binary path using
 `CLOUD_GOVERNANCE_OPA`; that test-only environment setting does not configure the
-server. To run the existing analysis suite plus pure E1 contracts without OPA:
+server. To run analysis/listing plus pure evaluation contracts/projection checks without OPA:
 
 ```sh
-uv run --locked --no-editable pytest -q --ignore=tests/test_policy_execution.py --ignore=tests/test_opa_runner.py --ignore=tests/test_evaluation_service.py --ignore=tests/test_evaluation_mcp.py
+uv run --locked --no-editable pytest -q --ignore=tests/test_policy_execution.py --ignore=tests/test_opa_runner.py --ignore=tests/test_evaluation_service.py --ignore=tests/test_evaluation_mcp.py --ignore=tests/test_rds_evaluation.py --ignore=tests/test_ssh_evaluation.py
 ```
 
 No AWS credentials, network access, Terraform, live resources, or infrastructure

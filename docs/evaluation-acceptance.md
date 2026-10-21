@@ -8,7 +8,10 @@ remain outside this increment. No AWS connectivity or Terraform execution exists
 
 This is the E5 checkpoint record. Specification 003 subsequently adds policy
 listing and updates runnable-server discovery to three tools; see
-[listing evidence](listing-acceptance.md) for current regression verification.
+[listing evidence](listing-acceptance.md). Specification 004 subsequently expands
+AWS-RDS-001 to v1.1.0; see [RDS evidence](rds-acceptance.md). Specification 005
+adds SSH and two-policy evaluation; [SSH evidence](ssh-acceptance.md) records
+current verification. The counts and scope below are historical E5 evidence.
 
 ## Verification result
 

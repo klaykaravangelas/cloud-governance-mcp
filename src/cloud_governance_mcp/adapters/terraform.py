@@ -25,7 +25,8 @@ from cloud_governance_mcp.models import (
     WarningCode,
 )
 from cloud_governance_mcp.normalization import extract_mask_paths, merge_mask_paths
-from cloud_governance_mcp.projection import is_candidate, project_desired
+from cloud_governance_mcp.rds_associations import project_rds_resources
+from cloud_governance_mcp.ssh_projection import project_ssh_resources
 
 _TEXT = TypeAdapter(IdentityText)
 _POSITIVE_INT = TypeAdapter(PositiveInt)
@@ -90,10 +91,17 @@ class TerraformPlanAdapter:
         except ValidationError:
             raise ConfigurationError() from None
 
-    def normalize(self, plan: object) -> ResourceSnapshot:
+    def normalize(
+        self, plan: object, selected_policy_ids: list[str] | None = None
+    ) -> ResourceSnapshot:
         """Return a sorted safe snapshot, or fixed errors with no rejected values."""
         try:
-            return self._normalize(_object(plan))
+            return self._normalize(
+                _object(plan),
+                selected_policy_ids
+                if selected_policy_ids is not None
+                else ["AWS-RDS-001"],
+            )
         except ValidationError as error:
             # Only examine error types. Locations, contexts and inputs can contain
             # sensitive names/values and must not enter diagnostics or logs.
@@ -106,7 +114,9 @@ class TerraformPlanAdapter:
             )
             raise AnalysisError(code) from None
 
-    def _normalize(self, plan: dict[str, object]) -> ResourceSnapshot:
+    def _normalize(
+        self, plan: dict[str, object], selected_policy_ids: list[str]
+    ) -> ResourceSnapshot:
         """Validate the envelope before indexing changes and recursive inventory."""
         version = _text(plan.get("format_version"))
         match = re.fullmatch(r"([0-9]+)\.[0-9]+", version)
@@ -179,13 +189,23 @@ class TerraformPlanAdapter:
                 resources.append(
                     (changes.get(address) or inventory[address]).normalized
                 )
-            # Projection happens after mask union, using only the authoritative
-            # source. A null/missing after never falls back to inventory/before.
-            if self._include_policy_values and is_candidate(resources[-1]):
-                source = changes.get(address) or inventory[address]
-                resources[-1].desired_state = project_desired(
-                    resources[-1], source.desired
-                )
+        # Association needs the complete merged graph, not traversal order. Only
+        # evaluation retains these transient authoritative desired objects; a
+        # missing/null after never falls back to inventory or before.
+        if self._include_policy_values:
+            desired = {
+                item.resource.address: (
+                    changes.get(item.resource.address)
+                    or inventory[item.resource.address]
+                ).desired
+                for item in resources
+            }
+            if "AWS-RDS-001" in selected_policy_ids:
+                project_rds_resources(resources, desired)
+            if "AWS-SG-001" in selected_policy_ids:
+                projected = project_ssh_resources(resources, desired)
+                for item in resources:
+                    item.ssh_state = projected.get(item.resource.address)
         unreported = sum(item.resource.source == "planned_values" for item in resources)
         if unreported:
             warn("CHANGE_ACTIONS_UNREPORTED", unreported)

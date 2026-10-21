@@ -46,16 +46,26 @@ it does not itself prove a live connection.
 
 Ask Codex to use the **cloud-governance-mcp tools** for these requests:
 
-1. “List the available governance policies.” Expect AWS-RDS-001, high severity,
-   version 1.0.0 and standalone RDS scope.
+1. “List the available governance policies.” Expect AWS-RDS-001 v1.1.0 and
+   AWS-SG-001 v1.0.0, both high severity, with their implemented scope.
 2. “Analyze `mixed_nested.json`.” Expect seven resources, four managed changes
    and partial coverage.
 3. “Evaluate `unencrypted_rds.json` using AWS-RDS-001.” Expect one encryption
    finding for `aws_db_instance.example`; evaluation succeeds and compliance fails.
-4. “Evaluate `encrypted_rds.json`.” Expect compliance to pass within the policy's
+4. “Evaluate `encrypted_rds.json` using AWS-RDS-001.” Expect compliance to pass within the policy's
    supported scope.
 5. “Evaluate `unknown_sensitive.json` and explain what could not be established.”
    Expect explicit uncertainty without sensitive values.
+6. “Evaluate `cluster_encrypted.json`, `cluster_unencrypted.json` and
+   `cluster_unknown_arn.json` using only AWS-RDS-001.” Expect three passes, three failures, then one
+   pass plus two indeterminate member checks. See [cluster examples](trying-rds-clusters.md).
+
+For SSH and both-policy testing, follow the four [SSH host prompts](trying-ssh.md#test-directly-through-codex).
+
+After an upgrade, an already-running server can retain old model definitions
+while reading newly installed catalog assets. A safe `POLICY_ASSETS_INVALID`
+response in that situation requires restarting the configured MCP process and
+verifying `list_policies` returns both current policy IDs/versions; reinstalling alone does not reload it.
 
 These are synthetic fixtures, requiring neither AWS credentials nor Terraform.
 Confirm Codex actually calls the MCP tool instead of reading JSON through a shell.

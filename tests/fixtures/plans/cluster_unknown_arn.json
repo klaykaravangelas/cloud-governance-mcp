@@ -1,0 +1,114 @@
+{
+  "format_version": "1.2",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_rds_cluster.example",
+      "type": "aws_rds_cluster",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "change": {
+        "actions": [
+          "no-op"
+        ],
+        "after": {
+          "storage_encrypted": true,
+          "cluster_identifier": "demo-cluster",
+          "arn": "arn:aws:rds:us-east-1:111122223333:cluster:demo-cluster"
+        },
+        "after_unknown": {
+          "arn": true
+        },
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_rds_cluster_instance.member0",
+      "type": "aws_rds_cluster_instance",
+      "name": "member0",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "change": {
+        "actions": [
+          "no-op"
+        ],
+        "after": {
+          "cluster_identifier": "demo-cluster",
+          "arn": "arn:aws:rds:us-east-1:111122223333:db:demo-member-0",
+          "storage_encrypted": false
+        },
+        "after_unknown": {
+          "arn": true
+        },
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_rds_cluster_instance.member1",
+      "type": "aws_rds_cluster_instance",
+      "name": "member1",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "mode": "managed",
+      "change": {
+        "actions": [
+          "no-op"
+        ],
+        "after": {
+          "cluster_identifier": "demo-cluster",
+          "arn": "arn:aws:rds:us-east-1:111122223333:db:demo-member-1",
+          "storage_encrypted": false
+        },
+        "after_unknown": {
+          "arn": true
+        },
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.example",
+          "type": "aws_rds_cluster",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "mode": "managed",
+          "values": {
+            "storage_encrypted": true,
+            "cluster_identifier": "demo-cluster",
+            "arn": "arn:aws:rds:us-east-1:111122223333:cluster:demo-cluster"
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_rds_cluster_instance.member0",
+          "type": "aws_rds_cluster_instance",
+          "name": "member0",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "mode": "managed",
+          "values": {
+            "cluster_identifier": "demo-cluster",
+            "arn": "arn:aws:rds:us-east-1:111122223333:db:demo-member-0",
+            "storage_encrypted": false
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_rds_cluster_instance.member1",
+          "type": "aws_rds_cluster_instance",
+          "name": "member1",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "mode": "managed",
+          "values": {
+            "cluster_identifier": "demo-cluster",
+            "arn": "arn:aws:rds:us-east-1:111122223333:db:demo-member-1",
+            "storage_encrypted": false
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  }
+}

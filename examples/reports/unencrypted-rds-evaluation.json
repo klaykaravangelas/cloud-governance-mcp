@@ -10,15 +10,17 @@
   "policy_scope": [
     {
       "policy_id": "AWS-RDS-001",
-      "policy_version": "1.0.0",
+      "policy_version": "1.1.0",
       "severity": "high",
       "supported_provider_names": [
         "registry.terraform.io/hashicorp/aws"
       ],
       "supported_resource_types": [
-        "aws_db_instance"
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance"
       ],
-      "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved."
+      "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred."
     }
   ],
   "findings": [

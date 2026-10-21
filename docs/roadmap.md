@@ -1,7 +1,9 @@
 # Roadmap
 
-Status: analysis A1–A7, evaluation E1–E5 and listing L1a–L1d complete; expanded policies next.
-Updated: 2026-10-19. Milestones describe scope and completion criteria, not calendar
+Status: analysis, evaluation, listing and M1 expanded RDS runtime implemented;
+M1's existing Codex reload smoke test remains pending.
+The user reported successful MCP use; Specification 005 implements M2 SSH coverage.
+Updated: 2026-10-21. Milestones describe scope and completion criteria, not calendar
 commitments or extra approval gates. Server implementation follows
 architecture/specification review and user direction, then proceeds through small
 verified increments.
@@ -22,6 +24,10 @@ verified increments.
 | Second increment: evaluation (complete) | Follow Specification 002; reuse the parser, add `evaluate_terraform_policies`, standalone RDS encryption Rego, policy catalog, constrained OPA runner and compliance reports. | EV-01–EV-24 and real OPA/stdio tests pass; analysis still works without OPA. |
 | Third specification (implemented) | [Specification 003](specifications/list-policies.md): listing metadata, empty input, catalog-only service, safe failures, L1a–L1d and LP-01–LP-14. | User authorized implementation; see [listing evidence](listing-acceptance.md). |
 | Third increment: policy listing (complete) | L1a–L1d use the existing evaluator catalog, with client walkthrough and acceptance evidence. | Three tools are discoverable; metadata matches evaluation, planned policies are excluded, and listing works without invoking OPA or reading plans. |
+| Fourth specification (approved; runtime implemented) | [Specification 004](specifications/expanded-rds-encryption.md): AWS-RDS-001 v1.1.0, cluster encryption, known-value/context association rules, M1a–M1e and RD-01–RD-22. | User authorized implementation; see [RDS evidence](rds-acceptance.md). |
+| M1: expanded RDS coverage (runtime implemented) | Direct `aws_rds_cluster` checks and conservative inheritance for `aws_rds_cluster_instance`; retain standalone behavior and three tools. | Automated Python/Rego/stdio checks pass; existing Codex connection must reload before its final host smoke check. |
+| Fifth specification (implemented) | [Specification 005](specifications/unrestricted-ssh-ingress.md): AWS-SG-001, three Terraform rule formats, masked network projection, two-policy integration, M2a–M2e and SG-01–SG-25. | User approved implementation; [SSH evidence](ssh-acceptance.md) records scope, uncertainty, privacy and two-policy accounting. |
+| M2: SSH ingress (implemented) | World-wide direct SSH exposure, scoped findings, both-policy selection/listing and representative examples. | SG-01–SG-25 have Python/Rego/stdio/package evidence; live Codex SSH reload check remains separately pending. |
 | v0.1: complete local Terraform MVP | Expand from the first RDS policy to all four policy families; retain the three tools, nested-module/action summaries, structured findings/coverage, examples and local verification commands. | All v0.1 acceptance criteria in `requirements.md` pass, packaged assets work outside the repository, and documented limitations match tested policy coverage. |
 | v0.2: packaging and contributor workflow | Docker packaging, expanded governance policies, GitHub Actions CI/CD, improved documentation/examples. | Container runs read-only with constrained mounted plans; CI executes Python/Rego checks with pinned runtimes. Release publishing remains explicitly controlled. |
 | v0.3: AWS inspection | boto3 adapter, AWS discovery, cross-account support, mocked AWS integration tests. | Read-only AWS snapshots flow through the shared model; mocked tests require no credentials. Permissions and session boundaries are documented before any live testing. |

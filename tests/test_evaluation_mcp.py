@@ -77,7 +77,7 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             selected = [
                 policy["policy_id"] for policy in listed.structured_content["policies"]
             ]
-            assert selected == ["AWS-RDS-001"]
+            assert selected == ["AWS-RDS-001", "AWS-SG-001"]
             for filename, status in [
                 ("encrypted_rds.json", "pass"),
                 ("unencrypted_rds.json", "fail"),
@@ -152,6 +152,8 @@ async def test_example_evaluation_matches_saved_report_outside_checkout(
             "-I",
             str(root / "examples/client.py"),
             "--evaluate",
+            "--policy-id",
+            "AWS-RDS-001",
             "--plan-path",
             f"{name}_rds.json",
             "--opa-path",

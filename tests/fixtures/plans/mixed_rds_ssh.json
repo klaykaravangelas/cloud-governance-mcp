@@ -1,0 +1,136 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_db_instance.example",
+      "mode": "managed",
+      "type": "aws_db_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "storage_encrypted": true,
+          "identifier": "synthetic-database"
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_security_group.example",
+      "type": "aws_security_group",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "ingress": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ]
+            }
+          ]
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket.example",
+      "type": "aws_s3_bucket",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "ingress": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ]
+            }
+          ]
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_db_instance.example",
+          "mode": "managed",
+          "type": "aws_db_instance",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "storage_encrypted": true,
+            "identifier": "synthetic-database"
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_security_group.example",
+          "type": "aws_security_group",
+          "name": "example",
+          "mode": "managed",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "ingress": [
+              {
+                "protocol": "tcp",
+                "from_port": 22,
+                "to_port": 22,
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            ]
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket.example",
+          "type": "aws_s3_bucket",
+          "name": "example",
+          "mode": "managed",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "ingress": [
+              {
+                "protocol": "tcp",
+                "from_port": 22,
+                "to_port": 22,
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            ]
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  }
+}

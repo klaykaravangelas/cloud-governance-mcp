@@ -1,8 +1,10 @@
 # Implementation plan
 
 Status: Specifications 001–003 implemented; A1–A7, E1–E5 and L1a–L1d complete.
-M1 (expanded RDS coverage) is the next planned increment and needs a specification.
-Updated: 2026-10-19.
+Specification 004's M1 runtime is implemented; existing Codex reload smoke testing
+remains observer-specific, alongside the user's successful hands-on report. See
+[RDS acceptance evidence](rds-acceptance.md). Specification 005 is approved and implemented; see [SSH evidence](ssh-acceptance.md).
+Updated: 2026-10-21.
 
 Build in this order: `analyze_terraform_plan`, `evaluate_terraform_policies`,
 `list_policies`, then expanded policy coverage. Each task has a narrow result and
@@ -131,12 +133,61 @@ implemented standalone RDS rule from the evaluator's catalog. Listing does not
 invoke OPA or imply that its runtime is configured. L1a–L1d together complete L1;
 expanded policy coverage remains separate.
 
+## Increment 4: expand RDS coverage (runtime implemented)
+
+The user completed hands-on calls to all three tools through Codex and requested
+the next specification, then approved implementation of
+[Specification 004](specifications/expanded-rds-encryption.md). It
+defines M1, including clusters, actual Aurora member resources, known-value ARN
+context, value-free graph projection and RD-01–RD-22. M1a–M1d are complete;
+M1e's live Codex reload check in this chat is pending, while the user reports
+successful MCP use, as recorded in [acceptance](rds-acceptance.md).
+Unknown identifiers/ARNs remain
+indeterminate; configuration dependency references are not treated as exact links.
+
+| Task | Depends on | Deliverable | Verification / done when |
+| --- | --- | --- | --- |
+| M1a: Define expanded contracts | L1; implementation authorized after specification review | Association variants, prospective policy metadata/reasons, engine input schema 2 and synthetic test builders. | RD-01/RD-07/RD-15/RD-17 contract cases; production coverage remains v1.0.0 until activation. |
+| M1b: Normalize and resolve associations | M1a | Two-pass masked evaluation projection and bounded pure resolver; discard temporary identifiers/ARN context before snapshots/OPA. | RD-02–RD-04/RD-07–RD-14: scope/masks, unique links, uncertainty blockers, source precedence, linear work and no leaks. |
+| M1c: Extend and verify Rego | M1b | Direct cluster checks, member target lookup, exact reason applicability and complete batch validation. | Real OPA checks cover target encryption/uncertainty and RD-03–RD-10/RD-15–RD-16/RD-19; proposed metadata stays test-only. |
+| M1d: Activate evaluation and catalog | M1c | Wire verified projection/engine input/Rego and publish v1.1.0 catalog/listing schemas together. | RD-01/RD-16–RD-20: counts, schema agreement, safe errors and unchanged three-tool inputs through SDK/stdio. |
+| M1e: Examples, documentation and acceptance | M1d | Illustrative HCL, real saved reports, updated scope/limitations, Codex smoke prompts, installed package verification and acceptance record. | RD-01–RD-22 mapped to executed evidence; full Python/Rego/packaging checks pass and analysis/listing remain OPA-independent. |
+
+This increment requires no new dependency, service, CLI setting or policy ID.
+It publishes AWS-RDS-001 v1.1.0 after implementation and automated checks.
+The full four-family v0.1 MVP remains
+subsequent work.
+
+## Increment 5: unrestricted SSH ingress (implemented)
+
+The user requested [Specification 005](specifications/unrestricted-ssh-ingress.md).
+It defines AWS-SG-001 v1.0.0 for inline, legacy standalone and modern standalone
+ingress rules. M2 also removes single-policy assumptions in selection, catalog,
+Rego dispatch and resource/check accounting. M2a–M2e are implemented;
+[SSH acceptance](ssh-acceptance.md) maps SG-01–SG-25 to executed evidence and
+distinguishes the pending live Codex reload check. The table preserves the
+implementation sequence, including the temporary prospective-assets stage.
+
+| Task | Depends on | Deliverable | Verification / done when |
+| --- | --- | --- | --- |
+| M2a: Contracts | Reviewed spec and implementation authorization | Strict SSH projection/schema 3, per-ID metadata and two-policy selection contracts; prospective test builders. | SG-13–SG-18/SG-20 contracts; served coverage stays RDS-only. |
+| M2b: Projection | M2a | Pure masked parsing for three formats, prefix-only CIDR data, conservative collection handling and bounded work. | SG-01–SG-13/SG-23; no OPA/AWS prerequisite for pure checks. |
+| M2c: Rego | M2b | Truth table/inline aggregation, two-policy dispatch and minimal lte capability using test-only prospective assets. | Real restricted OPA: SG-02–SG-10/SG-14–SG-15/SG-18–SG-19/SG-22. |
+| M2d: Activation | M2c | Wire verified schema/projection/Rego, publish both catalog entries/default selection and selected-policy resource counts together. | Full SDK/stdio, exhaustive safe errors and RDS-only regression, SG-14–SG-23. |
+| M2e: Evidence | M2d | Synthetic examples, illustrative separate HCL, real reports, walkthrough/status and acceptance record. | SG-01–SG-25 evidence, full local/package checks and distinct host observations. |
+
+The user approved Specification 005 for implementation. Add comments and
+docstrings with each authorized implementation task. No new dependency, cloud
+service, tool or configuration setting is proposed. Prefix-list contents,
+CIDR-union reachability, tags/S3 and future infrastructure capabilities stay out
+of this increment. Existing connection recovery does not block specification work.
+
 ## Subsequent v0.1 policy increments
 
 | Task | Depends on | Deliverable | Verification / done when |
 | --- | --- | --- | --- |
-| M1: Complete RDS family | L1 | `aws_rds_cluster` and conservative instance/cluster association handling. | Known cluster encryption, inheritance, unresolved associations, false/unknown/sensitive cases are tested in OPA and Python integration. |
-| M2: Add SSH ingress policy | L1 | AWS-SG-001 for inline and standalone rule representations. | TCP port 22/ranges, all-protocol rules, and IPv4/IPv6 world CIDRs fail; private/self/egress/other-port controls pass or are non-applicable. Unknown/sensitive cases remain explicit. |
+| M1: Expand RDS coverage (runtime implemented) | L1 | Specification 004's clusters and conservative Aurora member inheritance. | Automated evidence passes; live Codex reload check remains in the acceptance record. |
+| M2: Add SSH ingress policy (implemented) | L1/M1 | Follow Specification 005's M2a–M2e for three rule representations and two-policy integration. | SG-01–SG-25 establish exposure, uncertainty, privacy, counts and real OPA/stdio/package behavior. |
 | M3: Add mandatory tags policy | L1 | AWS-TAG-001, trusted startup tag-key configuration, and explicit supported taggable types. | Missing/empty keys, case sensitivity, inherited `tags_all`, unsupported/non-taggable types, unknown and sensitive values have tested outcomes. |
 | M4: Add S3 public access policy | L1 | AWS-S3-001 block flags and conservative bucket/block linkage. | All true, individual false flags, missing block, known/computed links, nested modules, unknown/sensitive flags, and absent account context have explicit tested coverage. |
 | M5: Verify complete v0.1 | M1–M4 | Representative mixed examples, updated docs, three-tool stdio walkthrough, and acceptance traceability against requirement IDs. | Full local verification passes without credentials/network; wheel includes production policies and no test-only Rego. Documented gaps cannot silently pass. No Docker, AWS adapter, or CI workflow is added. |

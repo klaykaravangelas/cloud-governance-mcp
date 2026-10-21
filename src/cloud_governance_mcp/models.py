@@ -9,15 +9,15 @@ from typing import Annotated, Literal, Self
 
 from pydantic import (
     AfterValidator,
-    BaseModel,
-    ConfigDict,
     Field,
     StringConstraints,
     ValidationError,
     model_validator,
 )
 
+from cloud_governance_mcp.contracts import ContractModel as ContractModel
 from cloud_governance_mcp.errors import AnalysisError, ErrorCode
+from cloud_governance_mcp.ssh_models import SSHProjection
 
 
 def _safe_text(value: str) -> str:
@@ -119,19 +119,6 @@ _COUNTED_WARNINGS = frozenset(
 )
 
 
-class ContractModel(BaseModel):
-    """No coercion or extra fields; validation exceptions are internal only."""
-
-    model_config = ConfigDict(
-        strict=True,
-        extra="forbid",
-        hide_input_in_errors=True,
-        validate_default=True,
-        # Recheck existing model instances if a mutable field changed after creation.
-        revalidate_instances="always",
-    )
-
-
 class AnalyzeTerraformPlanInput(ContractModel):
     """The analysis tool's single path argument; access checks belong to the loader."""
 
@@ -222,11 +209,43 @@ class UncertainEncryption(ContractModel):
     ]
 
 
+class DirectAssociation(ContractModel):
+    """Direct encryption checks do not depend on another resource."""
+
+    state: Literal["not_required"] = "not_required"
+
+
+class ResolvedAssociation(ContractModel):
+    """Retain a proved Terraform identity, never the raw AWS matching values."""
+
+    state: Literal["resolved"] = "resolved"
+    cluster_address: IdentityText = Field(repr=False)
+
+
+class UnresolvedAssociation(ContractModel):
+    """Uncertainty carries no target address and cannot silently become a link."""
+
+    state: Literal[
+        "sensitive",
+        "unknown",
+        "unverified",
+        "unavailable",
+        "missing",
+        "null",
+        "invalid_type",
+        "context_unverified",
+        "not_found",
+        "ambiguous",
+    ]
+
+
 class DesiredStateProjection(ContractModel):
     """Minimal RDS-specific input; cluster identifiers and raw values are absent."""
 
     scope: Literal[
         "standalone",
+        "cluster",
+        "cluster_member",
         "cluster_associated",
         "sensitive",
         "unknown",
@@ -237,6 +256,23 @@ class DesiredStateProjection(ContractModel):
     encryption: Annotated[
         KnownEncryption | UncertainEncryption, Field(discriminator="state")
     ] = Field(repr=False)
+    association: Annotated[
+        DirectAssociation | ResolvedAssociation | UnresolvedAssociation,
+        Field(discriminator="state"),
+    ] = Field(default_factory=DirectAssociation, repr=False)
+
+    @model_validator(mode="after")
+    def association_scope(self) -> Self:
+        """Members require relationship evidence and never use a computed copy."""
+        if self.scope == "cluster_member":
+            if (
+                self.association.state == "not_required"
+                or self.encryption.state != "unavailable"
+            ):
+                raise ValueError("Invalid member projection.")
+        elif self.association.state != "not_required":
+            raise ValueError("Unexpected association.")
+        return self
 
 
 class NormalizedResource(ContractModel):
@@ -251,6 +287,7 @@ class NormalizedResource(ContractModel):
     sensitive_paths: list[AttributePath] = Field(default_factory=list, repr=False)
     unknown_metadata_complete: bool
     desired_state: DesiredStateProjection | None = Field(default=None, repr=False)
+    ssh_state: SSHProjection | None = Field(default=None, repr=False)
 
     @model_validator(mode="after")
     def inventory_uncertainty(self) -> Self:

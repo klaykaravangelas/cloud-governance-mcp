@@ -1,0 +1,71 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": null,
+  "evaluation_status": "complete",
+  "compliance_status": "indeterminate",
+  "selected_policy_ids": [
+    "AWS-RDS-001",
+    "AWS-SG-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "policy_version": "1.1.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance"
+      ],
+      "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred."
+    },
+    {
+      "policy_id": "AWS-SG-001",
+      "policy_version": "1.0.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_security_group",
+        "aws_security_group_rule",
+        "aws_vpc_security_group_ingress_rule"
+      ],
+      "scope_description": "Observed inline ingress and standalone ingress rules only. Prefix-list contents remain unresolved; live reachability and unions of narrower CIDRs are not analyzed."
+    }
+  ],
+  "findings": [],
+  "indeterminate_checks": [
+    {
+      "policy_id": "AWS-SG-001",
+      "severity": "high",
+      "resource_address": "aws_vpc_security_group_ingress_rule.example",
+      "resource_type": "aws_vpc_security_group_ingress_rule",
+      "reason_code": "SSH_RULE_UNKNOWN",
+      "attribute_path": [],
+      "explanation": "Required ingress observations are unknown.",
+      "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 1,
+    "candidate_resources": 1,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 2,
+    "evaluated_checks": 2,
+    "unevaluated_checks": 0,
+    "applicable_checks": 1,
+    "passed": 0,
+    "failed": 0,
+    "indeterminate": 1,
+    "not_applicable": 1
+  }
+}

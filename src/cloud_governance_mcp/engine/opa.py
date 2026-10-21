@@ -20,7 +20,11 @@ from pydantic import ValidationError
 from cloud_governance_mcp.catalog import PolicyCatalog
 from cloud_governance_mcp.config import EvaluationSettings, validate_evaluation_settings
 from cloud_governance_mcp.evaluation_errors import EvaluationCode, EvaluationFailure
-from cloud_governance_mcp.evaluation_models import EngineReport, EvaluationInput
+from cloud_governance_mcp.evaluation_models import (
+    EngineReport,
+    EvaluationInput,
+    ProjectedResource,
+)
 from cloud_governance_mcp.json_codec import decode_object
 
 OPA_VERSION = "1.21.2"
@@ -53,6 +57,7 @@ async def _compute[T](function: Callable[..., T], *args: object) -> T:
 
 def _input_bytes(request: EvaluationInput, limit: int) -> bytes:
     """Measure the complete compact UTF-8 input, never a truncated projection."""
+    request = EvaluationInput.model_validate(request)
     payload = request.model_dump_json().encode("utf-8")
     if len(payload) > limit:
         raise EvaluationFailure(EvaluationCode.OPA_INPUT_LIMIT_EXCEEDED)
@@ -229,6 +234,7 @@ def validate_checks(
 ) -> EngineReport:
     """Revalidate injected engines as well as subprocess output before reporting."""
     try:
+        request = EvaluationInput.model_validate(request)
         report = EngineReport.model_validate(value)
         policies = {p.policy_id: p for p in catalog.select(request.selected_policy_ids)}
         resources = {r.address: r for r in request.resources}
@@ -259,15 +265,115 @@ def validate_checks(
                 else None
             )
             if (excluded is not None and check.reason_code != excluded) or (
-                excluded is None and check.outcome == "not_applicable"
+                excluded is None
+                and check.outcome == "not_applicable"
+                and not (
+                    check.policy_id == "AWS-SG-001"
+                    and resource.ssh_state is not None
+                    and resource.ssh_state.direction.state == "known"
+                    and resource.ssh_state.direction.value == "egress"
+                    and check.reason_code == "SSH_EGRESS_SKIPPED"
+                )
             ):
                 raise ValueError("Invalid applicability.")
+            if excluded is None and check.reason_code not in _allowed_reasons(
+                resource, resources
+            ):
+                raise ValueError("Invalid reason scope/state.")
         if seen != expected:
             raise ValueError("Missing checks.")
         report.checks.sort(key=lambda c: (c.policy_id, c.resource_address))
         return report
     except ValueError, KeyError, TypeError, IndexError, ValidationError:
         raise EvaluationFailure(EvaluationCode.OPA_OUTPUT_INVALID) from None
+
+
+def _allowed_reasons(
+    resource: ProjectedResource, resources: dict[str, ProjectedResource]
+) -> set[str]:
+    """Validate reason applicability without deciding a known boolean's outcome.
+
+    Rego owns pass/fail. This guard prevents an otherwise valid catalog reason
+    from describing a different resource, association state or encryption state.
+    """
+    if resource.resource_type in {
+        "aws_security_group",
+        "aws_security_group_rule",
+        "aws_vpc_security_group_ingress_rule",
+    }:
+        # Policy/type applicability was checked above; SSH boolean decisions stay
+        # in Rego. Validate representation/direction and available reason states.
+        projection = resource.ssh_state
+        if projection is None:
+            return set()
+        if projection.direction.state != "known":
+            return {"SSH_RULE_" + projection.direction.state.upper()}
+        if projection.direction.value == "egress":
+            return {"SSH_EGRESS_SKIPPED"}
+        prefix = "SSH_INLINE_" if projection.representation == "inline" else "SSH_RULE_"
+        if projection.rules.state != "known":
+            return {prefix + projection.rules.state.upper()}
+        observed_states = _ssh_states(projection.rules.model_dump())
+        states = {
+            value
+            for value in observed_states
+            if value not in {"known", "absent", "present"}
+        }
+        known_rules = [r for r in projection.rules.items if r.state == "known"]
+        if any(r.sources.prefix_lists.state == "present" for r in known_rules):
+            states.add("prefix_list_unresolved")
+        # Empty source sets can synthesize a missing observation in Rego.
+        states.add("missing")
+        allowed = {prefix + state.upper() for state in states}
+        if known_rules or not projection.rules.items:
+            allowed.add(prefix + "NO_UNRESTRICTED_INGRESS")
+        if known_rules:
+            allowed.add(prefix + "UNRESTRICTED_INGRESS")
+        return allowed
+    desired = resource.desired_state
+    if desired.scope == "cluster_member":
+        association = desired.association
+        if association.state != "resolved":
+            return {"RDS_CLUSTER_LINK_" + association.state.upper()}
+        encryption = resources[association.cluster_address].desired_state.encryption
+        prefix = "RDS_CLUSTER_ENCRYPTION_"
+    else:
+        scope_codes = {
+            "sensitive": "RDS_SCOPE_SENSITIVE",
+            "unknown": "RDS_SCOPE_UNKNOWN",
+            "unverified": "UNKNOWN_METADATA_INCOMPLETE",
+            "unavailable": "DESIRED_STATE_UNAVAILABLE",
+            "invalid_type": "RDS_SCOPE_INVALID_TYPE",
+            "cluster_associated": "RDS_CLUSTER_ASSOCIATION_UNSUPPORTED",
+        }
+        if desired.scope in scope_codes:
+            return {scope_codes[desired.scope]}
+        encryption = desired.encryption
+        prefix = "RDS_ENCRYPTION_"
+        if encryption.state in {"unverified", "unavailable"}:
+            return {
+                "UNKNOWN_METADATA_INCOMPLETE"
+                if encryption.state == "unverified"
+                else "DESIRED_STATE_UNAVAILABLE"
+            }
+    if encryption.state == "known":
+        return {prefix + "ENABLED", prefix + "DISABLED"}
+    return {prefix + encryption.state.upper()}
+
+
+def _ssh_states(value: object) -> set[str]:
+    """Walk only sanitized contract states, never provider payloads."""
+    result = set()
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            if "state" in item:
+                result.add(item["state"])
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    return result
 
 
 class OpaEngine:
@@ -316,7 +422,12 @@ class OpaEngine:
                 assets = stack.enter_context(
                     as_file(files("cloud_governance_mcp.policies"))
                 )
-                for relative in ("capabilities.json", "catalog.json", "rego/rds.rego"):
+                for relative in (
+                    "capabilities.json",
+                    "catalog.json",
+                    "rego/rds.rego",
+                    "rego/ssh.rego",
+                ):
                     if not assets.joinpath(relative).is_file():
                         raise ValueError("Missing assets.")
             except OSError, ValueError:
@@ -332,6 +443,8 @@ class OpaEngine:
                 str(assets / "capabilities.json"),
                 "--data",
                 str(assets / "rego/rds.rego"),
+                "--data",
+                str(assets / "rego/ssh.rego"),
                 "--data",
                 str(assets / "catalog.json"),
                 QUERY,

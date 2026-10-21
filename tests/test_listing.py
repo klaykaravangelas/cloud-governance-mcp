@@ -46,14 +46,18 @@ def test_public_metadata_is_the_selectable_catalog_projection():
     report = project_catalog(catalog)
     assert report == project_catalog(catalog)
     assert report.schema_version == "1"
-    assert len(report.policies) == 1
+    assert len(report.policies) == 2
     public = report.policies[0]
     internal = catalog.select([public.policy_id])[0]
     for field in type(public).model_fields:
         assert getattr(public, field) == getattr(internal, field)
-    assert public.supported_resource_types == ["aws_db_instance"]
+    assert public.supported_resource_types == [
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance",
+    ]
     assert public.required_configuration == []
-    assert "cluster associations are not resolved" in public.scope_description
+    assert "Unresolved associations are indeterminate" in public.scope_description
     assert set(internal.model_dump()) - set(public.model_dump()) == {
         "enabled",
         "reasons",
@@ -61,7 +65,11 @@ def test_public_metadata_is_the_selectable_catalog_projection():
     assert PolicyList.model_validate_json(report.model_dump_json()) == report
     # Modifying a caller's public list cannot alter the internal catalog.
     public.supported_resource_types.clear()
-    assert internal.supported_resource_types == ["aws_db_instance"]
+    assert internal.supported_resource_types == [
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance",
+    ]
 
 
 @pytest.mark.parametrize(

@@ -17,12 +17,13 @@ The v0.1 target has three complementary tools:
 | Tool | Purpose | Status |
 | --- | --- | --- |
 | `analyze_terraform_plan` | Explain proposed changes through resource identities, action/type/mode counts, and coverage warnings. | Implemented |
-| `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; standalone RDS encryption (AWS-RDS-001) |
+| `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; RDS encryption (AWS-RDS-001 v1.1.0) and unrestricted SSH ingress (AWS-SG-001 v1.0.0) |
 | `list_policies` | Describe implemented governance policies, versions, severity, supported resources and configuration requirements. | Implemented; uses the shared evaluation catalog without OPA |
 
-The first policy checks standalone RDS storage encryption. Planned coverage adds
-RDS clusters, unrestricted SSH ingress, mandatory resource tags and S3 public
-access protection. Only the implemented RDS policy is selectable today.
+RDS coverage includes standalone instances and clusters, with conservative
+encryption inheritance for cluster members. SSH coverage includes inline security
+group rules, legacy rules and modern ingress rules with direct world-wide sources.
+Mandatory resource tags and S3 public access protection remain planned.
 
 Analysis explains changes; evaluation adds compliance decisions; policy
 listing describes the available rules. AWS connectivity is a later milestone.
@@ -35,6 +36,17 @@ and a hands-on walkthrough. Package version is `0.1.0.dev0`; all three tools are
 available, while the full v0.1 policy coverage remains in progress. Evaluation
 uses pinned OPA 1.21.2. All tools operate locally without AWS credentials or
 Terraform. Analysis and policy listing need no OPA configuration or installation.
+
+[Specification 004](docs/specifications/expanded-rds-encryption.md) adds cluster
+encryption and conservative cluster-member associations. Unknown ARNs, ambiguous
+targets or unproven AWS context yield `indeterminate`; live defaults are never
+inferred. See the [cluster walkthrough](docs/trying-rds-clusters.md) and
+[verification record](docs/rds-acceptance.md).
+
+[Specification 005](docs/specifications/unrestricted-ssh-ingress.md) implements
+unrestricted SSH ingress and evaluation of two bundled policies. Omitting
+`policy_ids` selects both; select either ID for a narrower check. See the
+[SSH walkthrough](docs/trying-ssh.md) and [verification record](docs/ssh-acceptance.md).
 
 ## Try the analysis tool locally
 
@@ -66,7 +78,7 @@ Follow [OPA setup](docs/opa-setup.md) to install and checksum-verify the pinned
 local binary. Then evaluate the synthetic unencrypted RDS plan:
 
 ```sh
-uv run --locked --no-editable python examples/client.py --evaluate --plan-path unencrypted_rds.json --opa-path .tools/opa/1.21.2/opa
+uv run --locked --no-editable python examples/client.py --evaluate --policy-id AWS-RDS-001 --plan-path unencrypted_rds.json --opa-path .tools/opa/1.21.2/opa
 ```
 
 The result reports `complete` execution and a `fail` compliance finding for
@@ -75,14 +87,26 @@ The result reports `complete` execution and a `fail` compliance finding for
 [evaluation walkthrough](docs/trying-evaluation.md) and
 [saved full report](examples/reports/unencrypted-rds-evaluation.json).
 
+Try `--plan-path cluster_unencrypted.json` for one cluster and two members:
+three failed checks, with member remediation pointing to cluster encryption.
+`cluster_encrypted.json` passes all three; `cluster_unknown_arn.json` reports a
+passing cluster and two indeterminate members. New-resource plans commonly have
+unknown ARNs, so this last case is an expected limitation.
+
+For both policies, try `--evaluate --plan-path mixed_rds_ssh.json` with the same
+OPA path and no `--policy-id`. The three-resource plan produces six checks: one
+pass, one SSH failure and four not-applicable checks. Uncertain network values
+remain indeterminate unless another known predicate resolves the rule. This is
+plan-based direct exposure checking; it does not inspect effective AWS reachability.
+
 ## List available governance policies
 
 ```sh
 uv run --locked --no-editable python examples/client.py --list-policies
 ```
 
-This returns AWS-RDS-001 metadata from the same catalog used by evaluation,
-including its standalone-only scope and empty policy configuration requirements.
+This returns AWS-RDS-001 and AWS-SG-001 metadata from the same catalog used by evaluation,
+including supported resource types and empty policy configuration requirements.
 It reads no plan and invokes no OPA process. Compare the
 [saved response](examples/reports/policy-list.json) or follow the
 [listing walkthrough](docs/trying-listing.md). `--list-tools` discovers MCP
@@ -133,7 +157,7 @@ observed local macOS editable-import issue. See [development notes](docs/develop
 
 Install the pinned OPA runtime for the full suite, which includes real policy
 tests. The documented [analysis-only command](docs/trying-evaluation.md#5-verify-locally)
-works without it. Current verification: **702 Python tests and 7 Rego tests pass**.
+works without it. Current verification: **1,009 Python tests and 29 Rego tests pass**.
 
 ```sh
 uv run --locked --no-editable pytest
@@ -165,12 +189,19 @@ Future capabilities are not included in the current server. See the
 
 ## Documentation
 
+- [Project status](docs/project-status.md)
 - [Requirements and acceptance criteria](docs/requirements.md)
 - [Architecture and decisions](docs/architecture.md)
 - [Connect Codex over stdio](docs/connecting-codex.md)
 - [Specification 001](docs/specifications/analyze-terraform-plan.md)
 - [Specification 002: policy evaluation](docs/specifications/evaluate-terraform-policies.md)
 - [Specification 003: policy listing](docs/specifications/list-policies.md)
+- [Specification 004: expanded RDS coverage](docs/specifications/expanded-rds-encryption.md)
+- [Specification 005: unrestricted SSH ingress](docs/specifications/unrestricted-ssh-ingress.md)
+- [Cluster encryption walkthrough](docs/trying-rds-clusters.md)
+- [Expanded RDS acceptance evidence](docs/rds-acceptance.md)
+- [SSH ingress walkthrough](docs/trying-ssh.md)
+- [SSH ingress acceptance evidence](docs/ssh-acceptance.md)
 - [Policy listing walkthrough](docs/trying-listing.md)
 - [Policy listing acceptance evidence](docs/listing-acceptance.md)
 - [Evaluation walkthrough](docs/trying-evaluation.md)
@@ -178,6 +209,7 @@ Future capabilities are not included in the current server. See the
 - [Implementation plan](docs/implementation-plan.md)
 - [Release roadmap](docs/roadmap.md)
 - [Repository guidance](AGENTS.md)
+- [Detailed engineering notes](docs/engineering-notes.md)
 
 Stack: Python 3.14+, the official MCP Python SDK, Pydantic, AnyIO, uv, pytest and
 Ruff. Policy evaluation uses OPA/Rego.

@@ -1,9 +1,11 @@
-# Proposed architecture
+# Architecture
 
 Status: first analysis increment A1–A7 implemented and verified on macOS arm64.
 Specification 002 implements the first evaluation policy. Specification 003
-implements catalog-only policy listing; expanded policy coverage remains next.
-Updated: 2026-10-19.
+implements catalog-only policy listing. Specification 004 implements expanded
+RDS coverage; see [acceptance evidence](rds-acceptance.md) for user-reported and
+observer-specific host observations. Specification 005 implements SSH/two-policy support.
+Updated: 2026-10-21.
 
 ## Repository inspection
 
@@ -46,9 +48,9 @@ framework is needed in v0.1.
 
 The implemented [Specification 002](specifications/evaluate-terraform-policies.md)
 for E1–E5 refines the evaluation design below. It defines explicit required-value
-states, standalone-only RDS scope, one active evaluation with no queue, complete
-policy/resource-pair validation and atomic engine failures. Analysis and evaluation are exposed;
-listing follows in Specification 003; expanded policy coverage remains future work.
+states, initial standalone RDS scope, one active evaluation with no queue, complete
+policy/resource-pair validation and atomic engine failures. Specifications 003 and
+004 add listing and expanded RDS coverage; all three tools are exposed.
 
 [Specification 003](specifications/list-policies.md) implements listing: a
 strict empty input, public metadata projection, lazy catalog-only service,
@@ -57,6 +59,37 @@ requires neither plan loading nor OPA, while preserving normal startup root
 requirements. The catalog remains the shared source of selectable policy IDs and
 metadata; internal reason templates do not become a public listing contract.
 
+[Specification 004](specifications/expanded-rds-encryption.md) implements
+evaluation-only, two-pass RDS association resolution before returning the
+snapshot. Minimal masked identifiers/ARN context are transient; only fixed states
+and a resolved Terraform cluster address may survive into OPA. Rego assesses the
+target cluster's encryption. Known matching AWS context prevents cross-account/
+Region name-only joins; unknown creation-time ARNs and unproven expression
+references remain indeterminate. It keeps three tools, advances the
+policy version to 1.1.0 and initially advanced engine input to schema 2 (now 3), with no new
+dependency or cloud access. Public and engine output envelopes stay schema 1.
+Exact/incomplete-key indexes make association work linear. Graph validation
+rejects invalid targets; output validation checks exhaustive pairs, catalog
+semantics and each reason's applicable resource/scope/state. Rego owns boolean
+pass/fail decisions; Python does not infer compliance from linkage.
+
+[Specification 005](specifications/unrestricted-ssh-ingress.md) implements
+separate pure SSH projection/contracts alongside RDS. Known network inputs are reduced to protocol numbers,
+port intervals, CIDR family/prefix lengths and reference-presence states; raw
+CIDRs/IDs never reach OPA. Conservative collection masking avoids matching
+unordered inline rules by cross-source array position. Rego decides direct SSH
+exposure and aggregates one check per resource/policy. Selected-policy projection
+keeps unrelated policy values/work ceilings out of single-policy calls.
+
+M2's internal input schema 3 and fixed two-policy dispatch preserve
+public report envelopes. Catalog/listing validation becomes strict per ID;
+omission selects both enabled policies. Resource buckets count
+the union supported by selected policies, while checks count every selected
+policy/resource pair. The deterministic lte capability supports Rego
+port comparisons; network/runtime capabilities remain denied. SSH rules/source
+entries receive fixed work ceilings in addition to current byte/runtime budgets.
+See [SSH acceptance evidence](ssh-acceptance.md) for executed checks and limitations.
+
 | Increment | User-visible tool | Components introduced |
 | --- | --- | --- |
 | Analysis | `analyze_terraform_plan` | Package/stdio entrypoint, settings, restricted loader, generic Terraform parser, normalized identities/actions/masks, and analysis summaries. |
@@ -64,7 +97,7 @@ metadata; internal reason templates do not become a public listing contract.
 | Listing | Add `list_policies` | Thin catalog interface using metadata already needed by evaluation. |
 | Expanded policies | Same three tools | Additional policy assets, supported associations, and representative fixtures/tests. |
 
-## Proposed package layout
+## Package layout
 
 ```text
 src/cloud_governance_mcp/
@@ -75,6 +108,7 @@ src/cloud_governance_mcp/
   service.py              # existing analysis orchestration
   evaluation_service.py   # independent evaluation admission and orchestration
   analysis.py             # implemented public analysis summaries
+  contracts.py            # shared strict contract base; no MCP imports
   models.py               # Pydantic core contracts; no MCP imports
   evaluation_models.py    # strict policy/check/report contracts
   evaluation_errors.py    # safe fixed evaluation failures
@@ -82,6 +116,10 @@ src/cloud_governance_mcp/
   listing_errors.py       # fixed listing failures
   listing.py              # catalog-only projection/service
   projection.py           # optional masked desired-state policy inputs
+  rds_associations.py     # bounded transient association resolver, evaluation only
+  ssh_models.py           # strict value-free network observations
+  ssh_projection.py       # masked bounded protocol/port/source parsing
+  policy_definitions.py   # fixed IDs/scopes and per-ID metadata validation
   catalog.py              # lazy package-only metadata loading
   files.py                # contained, bounded JSON reads
   normalization.py        # sensitive/unknown path handling shared by adapters
@@ -119,6 +157,8 @@ implemented. Listing exposes a public metadata projection of the shared catalog.
 | --- | --- | --- |
 | File loader | `RestrictedPlanLoader.read_plan(plan_path: str) -> dict[str, JsonValue]` | Implemented in A3: context-managed pinned roots, component-relative no-follow opens, regular-file checks, bounded bytes/depth, strict JSON decoding; no Terraform or policy logic. |
 | Terraform adapter | `TerraformPlanAdapter.normalize(plan: object) -> ResourceSnapshot` | Implemented in A4: validate consumed plan structures, recursively merge identities/actions by exact address, extract typed masks and fixed warnings. Discard attribute values; a redacted desired-value projection belongs to evaluation. |
+| RDS associations | Pure bounded resolver called during selected-policy evaluation normalization | Specification 004: build masked temporary lookup keys, prove unique same-plan cluster links and discard raw matching data before returning the snapshot. No compliance decisions or AWS inspection. |
+| SSH projection | Pure bounded parser called only when SSH is selected | Specification 005: strict protocol/port/CIDR syntax, conservative collection masks, minimal numeric observations and reference presence; Rego makes exposure decisions. |
 | Analysis builder | `analysis.summarize(snapshot: ResourceSnapshot) -> PlanAnalysis` | Implemented in A5: deterministic public identities, action/type/mode counts, managed changing count, and complete/partial status from coverage warnings. Revalidate internal contracts; omit masks and values. |
 | Policy catalog | `load_catalog() -> PolicyCatalog`; `catalog.select(ids)` | Implemented shared metadata source for applicability, selection and safe messages. Internal reason templates stay private. |
 | Policy listing | `await PolicyListingService.list_policies() -> PolicyList` | Specification 003: project public metadata from the same catalog without plan or OPA access; validate/bound output and sanitize failures. |
@@ -170,7 +210,7 @@ version negotiation and cancellation notifications remain SDK responsibilities.
 
 Use JSON-compatible typed values and strict Pydantic validation. Terraform permits
 additive fields within a supported format major; ignore unneeded top-level fields.
-A4 retains identities and mask metadata only. Evaluation will optionally add a
+A4 retains identities and mask metadata only. Evaluation optionally adds a
 projection during the same normalization pass, preserving only the provider-specific
 values its policies need. Specification 002 retains a known encryption boolean
 and derives cluster-scope states without retaining cluster identifier strings.
@@ -181,8 +221,8 @@ unsupported/invalid-input errors rather than guessed interpretations.
 | --- | --- |
 | `ResourceSnapshot` | `schema_version`, `source_kind="terraform_plan"`, source format version, resources, coverage warnings. Schema version is internal and distinct from Terraform's. |
 | `ResourceAnalysis` | Public `address`, `provider_name`, `resource_type`, `name`, `mode`, `module_address`, optional index/previous address, ordered `actions`, derived category, and source provenance. No attribute values or masks. |
-| `NormalizedResource` | Wraps `resource: ResourceAnalysis` with mask paths and uncertainty metadata. Evaluation opts into `desired_state`, retaining only a known encryption boolean and value-free scope/uncertainty states. Analysis leaves it absent. |
-| `PolicyMetadata` | Current AWS-RDS-001 ID/version, title, description, high severity, supported providers/types, required paths, explicit empty policy configuration requirements and internal reason templates. |
+| `NormalizedResource` | Wraps `resource: ResourceAnalysis` with masks/uncertainty. Selected evaluation adds minimal `desired_state`/RDS association and/or `ssh_state` observations. Raw matching identifiers and network sources are discarded; analysis retains neither projection. |
+| `PolicyMetadata` | Strict per-ID versions/scopes for AWS-RDS-001 and AWS-SG-001, title, description, high severity, required paths, empty configuration requirements and internal reason templates. |
 | `PolicyList` / `ListedPolicy` | Versioned public metadata allowlist; excludes enabled flags, reason templates and configured values. Same catalog as evaluation. |
 | `CheckResult` | Policy ID, resource address, outcome (`pass/fail/indeterminate/not_applicable`), trusted reason code, and optional attribute path. No arbitrary evidence value or free-form plan-derived explanation. |
 | `EvaluationError` | Stable code, safe message, optional policy ID; never a violation. Examples: `OPA_NOT_FOUND`, `OPA_TIMEOUT`, `OPA_EXECUTION_ERROR`, `OPA_OUTPUT_INVALID`. |
@@ -401,7 +441,7 @@ the public summary builder and async service with limits/admission/cleanup. All
 521 tests pass. A6 implements the MCP analysis tool and stdio; A7 adds the
 [hands-on client walkthrough](trying-analysis.md), saved report and
 [acceptance evidence](analysis-acceptance.md). Analysis and the first standalone RDS policy are
-complete; listing is also implemented, while expanded policy coverage remains planned. See
+complete; listing, expanded RDS and SSH coverage are implemented. Tags and S3 remain planned. See
 [development setup](development.md). OPA 1.21.2 is selected and verified on macOS arm64; see
 [OPA setup](opa-setup.md) and [evaluation evidence](evaluation-acceptance.md). No publication is included in these increments, and no extra
 approval gate is imposed between later tested increments.

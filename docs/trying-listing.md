@@ -21,23 +21,23 @@ uv run --locked --no-editable python examples/client.py --list-policies
 ```
 
 `--list-policies` calls our third function with `{}` and prints the
-[full saved response](../examples/reports/policy-list.json). It contains one rule:
+[full saved response](../examples/reports/policy-list.json). It contains two rules:
 
-| Field | Value |
-| --- | --- |
-| `policy_id` | `AWS-RDS-001` |
-| `policy_version` | `1.0.0` |
-| `title` | `RDS storage encryption` |
-| `severity` | `high` |
-| `supported_resource_types` | `["aws_db_instance"]` |
-| `required_paths` | `[["storage_encrypted"], ["cluster_identifier"]]` |
-| `required_configuration` | `[]` |
+| Policy | Version | Severity | Supported resources |
+| --- | --- | --- | --- |
+| `AWS-RDS-001` | `1.1.0` | `high` | `aws_db_instance`, `aws_rds_cluster`, `aws_rds_cluster_instance` |
+| `AWS-SG-001` | `1.0.0` | `high` | `aws_security_group`, `aws_security_group_rule`, `aws_vpc_security_group_ingress_rule` |
 
-The response also describes the canonical AWS provider, the encryption rule and
-its standalone-only scope. `cluster_identifier` determines standalone scope;
-cluster associations are not resolved. SSH, tags, S3 and RDS cluster rules are
-not advertised yet. An empty configuration-requirements array means this policy
-needs no policy-specific settings; evaluation still requires OPA configuration.
+The response includes titles, descriptions, canonical AWS provider, required paths
+and scope limitations. RDS members need a unique known same-plan cluster with
+matching identifier and ARN context; computed or ambiguous links remain
+indeterminate. SSH covers direct individual world-wide CIDRs with TCP port 22 or
+all protocols; unresolved prefix lists are not expanded. See the
+[SSH walkthrough](trying-ssh.md) for its uncertainty rules. Tags, S3 and
+global-cluster rules are not advertised.
+
+Both entries explicitly return `required_configuration: []`: neither needs
+policy-specific settings. Evaluation still requires OPA configuration.
 
 The example client starts and stops the real stdio server using the same Python
 environment. It explicitly supplies the fixture directory as the allowed root,

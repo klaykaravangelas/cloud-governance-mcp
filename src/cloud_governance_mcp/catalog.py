@@ -1,35 +1,67 @@
 """Load the one trusted catalog lazily; share metadata across execution/reporting."""
 
 from importlib.resources import files
-from typing import Literal, Self
+from typing import Literal, Self, get_args
 
 from pydantic import Field, ValidationError, model_validator
 
 from cloud_governance_mcp.evaluation_errors import EvaluationCode, EvaluationFailure
-from cloud_governance_mcp.evaluation_models import PolicyMetadata
+from cloud_governance_mcp.evaluation_models import PolicyMetadata, ReasonCode
 from cloud_governance_mcp.json_codec import decode_object
 from cloud_governance_mcp.models import ContractModel
-from cloud_governance_mcp.projection import AWS_PROVIDER
+from cloud_governance_mcp.policy_definitions import COMMON_REASONS, POLICY_IDS
 
 
 class PolicyCatalog(ContractModel):
     """Validate scope and completeness, not just syntactically valid JSON."""
 
     schema_version: Literal["1"]
-    policies: list[PolicyMetadata] = Field(min_length=1, max_length=1)
+    policies: list[PolicyMetadata] = Field(min_length=2, max_length=2)
 
     @model_validator(mode="after")
     def implemented_scope(self) -> Self:
         """Prevent an edited catalog from advertising unimplemented coverage."""
-        policy = self.policies[0]
-        if (
-            policy.supported_provider_names != [AWS_PROVIDER]
-            or policy.supported_resource_types != ["aws_db_instance"]
-            or policy.required_paths != [["storage_encrypted"], ["cluster_identifier"]]
-        ):
-            raise ValueError("Unsupported policy scope.")
-        if len(policy.reasons) != 16:
-            raise ValueError("Incomplete reason catalog.")
+        if [p.policy_id for p in self.policies] != list(POLICY_IDS):
+            raise ValueError("Incomplete policy catalog.")
+        codes = set(get_args(ReasonCode.__value__))
+        for policy in self.policies:
+            expected = {
+                code
+                for code in codes
+                if (
+                    code.startswith("SSH_")
+                    if policy.policy_id == "AWS-SG-001"
+                    else not code.startswith("SSH_")
+                )
+            }
+            expected |= COMMON_REASONS
+            if set(policy.reasons) != expected:
+                raise ValueError("Incomplete reason catalog.")
+            for code, reason in policy.reasons.items():
+                outcome = (
+                    "not_applicable"
+                    if code in COMMON_REASONS or code == "SSH_EGRESS_SKIPPED"
+                    else "pass"
+                    if code.endswith("_ENABLED")
+                    or code.endswith("_NO_UNRESTRICTED_INGRESS")
+                    else "fail"
+                    if code.endswith("_DISABLED")
+                    or code.endswith("_UNRESTRICTED_INGRESS")
+                    else "indeterminate"
+                )
+                path = (
+                    ["ingress"]
+                    if code.startswith("SSH_INLINE_")
+                    else ["type"]
+                    if code == "SSH_EGRESS_SKIPPED"
+                    else ["cluster_identifier"]
+                    if code.startswith(("RDS_SCOPE_", "RDS_CLUSTER_"))
+                    else ["storage_encrypted"]
+                    if code.startswith("RDS_ENCRYPTION_")
+                    else []
+                )
+                if reason.outcome != outcome or reason.attribute_path != path:
+                    raise ValueError("Invalid reason semantics.")
         return self
 
     def select(self, ids: list[str]) -> list[PolicyMetadata]:

@@ -4,16 +4,18 @@
     "policies": [
       {
         "policy_id": "AWS-RDS-001",
-        "policy_version": "1.0.0",
+        "policy_version": "1.1.0",
         "title": "RDS storage encryption",
-        "description": "Require explicit storage encryption for standalone AWS RDS instances.",
+        "description": "Require explicit storage encryption for supported AWS RDS instances and clusters, including resolvable cluster members.",
         "severity": "high",
         "enabled": true,
         "supported_provider_names": [
           "registry.terraform.io/hashicorp/aws"
         ],
         "supported_resource_types": [
-          "aws_db_instance"
+          "aws_db_instance",
+          "aws_rds_cluster",
+          "aws_rds_cluster_instance"
         ],
         "required_paths": [
           [
@@ -21,9 +23,15 @@
           ],
           [
             "cluster_identifier"
+          ],
+          [
+            "arn"
+          ],
+          [
+            "region"
           ]
         ],
-        "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved.",
+        "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred.",
         "required_configuration": [],
         "reasons": {
           "DATA_SOURCE_SKIPPED": {
@@ -85,7 +93,7 @@
             "attribute_path": [
               "cluster_identifier"
             ],
-            "explanation": "RDS cluster association resolution is not supported by this policy version.",
+            "explanation": "The legacy instance association guard cannot establish standalone RDS scope.",
             "remediation": "Provide a complete plan with known, non-sensitive policy inputs."
           },
           "RDS_ENCRYPTION_SENSITIVE": {
@@ -143,6 +151,394 @@
             ],
             "explanation": "RDS storage encryption is explicitly disabled.",
             "remediation": "Configure storage encryption for the intended RDS resource."
+          },
+          "RDS_CLUSTER_LINK_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Association evidence is sensitive.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Association evidence is unknown.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Association unknown metadata is incomplete.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Desired association evidence is unavailable.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "The cluster identifier is missing.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "The cluster identifier is null.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Association evidence has an invalid type or conflicting context.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_CONTEXT_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "A unique association cannot be established from available context.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_NOT_FOUND": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "No eligible same-plan cluster matches the association.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_LINK_AMBIGUOUS": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Multiple eligible same-plan clusters match the association.",
+            "remediation": "Inspect the member association and provide known same-plan cluster identity and ARN context."
+          },
+          "RDS_CLUSTER_ENCRYPTION_ENABLED": {
+            "outcome": "pass",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "The associated cluster explicitly enables storage encryption.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "The associated cluster explicitly fails the storage encryption requirement.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is sensitive.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is unknown.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is unverified.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is unavailable.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is missing.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is null.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          },
+          "RDS_CLUSTER_ENCRYPTION_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "cluster_identifier"
+            ],
+            "explanation": "Storage encryption for the associated cluster is invalid type.",
+            "remediation": "Inspect and explicitly configure storage encryption on the associated cluster; do not configure the member's computed encryption attribute."
+          }
+        }
+      },
+      {
+        "policy_id": "AWS-SG-001",
+        "policy_version": "1.0.0",
+        "title": "Unrestricted SSH ingress",
+        "description": "Detect observed ingress rules permitting direct TCP SSH from an individual world-wide IPv4 or IPv6 CIDR.",
+        "severity": "high",
+        "enabled": true,
+        "supported_provider_names": [
+          "registry.terraform.io/hashicorp/aws"
+        ],
+        "supported_resource_types": [
+          "aws_security_group",
+          "aws_security_group_rule",
+          "aws_vpc_security_group_ingress_rule"
+        ],
+        "required_paths": [
+          [
+            "ingress"
+          ],
+          [
+            "type"
+          ],
+          [
+            "protocol"
+          ],
+          [
+            "ip_protocol"
+          ],
+          [
+            "from_port"
+          ],
+          [
+            "to_port"
+          ],
+          [
+            "cidr_blocks"
+          ],
+          [
+            "ipv6_cidr_blocks"
+          ],
+          [
+            "cidr_ipv4"
+          ],
+          [
+            "cidr_ipv6"
+          ],
+          [
+            "prefix_list_ids"
+          ],
+          [
+            "prefix_list_id"
+          ],
+          [
+            "self"
+          ],
+          [
+            "security_groups"
+          ],
+          [
+            "source_security_group_id"
+          ],
+          [
+            "referenced_security_group_id"
+          ]
+        ],
+        "scope_description": "Observed inline ingress and standalone ingress rules only. Prefix-list contents remain unresolved; live reachability and unions of narrower CIDRs are not analyzed.",
+        "required_configuration": [],
+        "reasons": {
+          "DATA_SOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Data sources are excluded from desired-state governance.",
+            "remediation": "No remediation is required for this check."
+          },
+          "DELETED_RESOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Deleted resources have no desired-state encryption check.",
+            "remediation": "No remediation is required for this check."
+          },
+          "RESOURCE_NOT_SUPPORTED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "This resource is outside the selected policy scope.",
+            "remediation": "No remediation is required for this check."
+          },
+          "SSH_EGRESS_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [
+              "type"
+            ],
+            "explanation": "Outbound rules are outside this ingress policy.",
+            "remediation": "No remediation is required for this check."
+          },
+          "SSH_INLINE_UNRESTRICTED_INGRESS": {
+            "outcome": "fail",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "An observed ingress permission allows unrestricted direct SSH.",
+            "remediation": "Restrict the source of SSH access or remove the ingress permission."
+          },
+          "SSH_INLINE_NO_UNRESTRICTED_INGRESS": {
+            "outcome": "pass",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "No unrestricted direct SSH permission was established in the observed scope.",
+            "remediation": "No remediation is required within this policy scope."
+          },
+          "SSH_INLINE_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Required ingress observations are sensitive.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Required ingress observations are unknown.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Unknown-value metadata is incomplete.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "The desired ingress state is unavailable.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Required ingress observations or a usable source are missing.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Required ingress observations are null.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Required ingress observations have an unsupported shape or value type.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_INLINE_PREFIX_LIST_UNRESOLVED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ingress"
+            ],
+            "explanation": "Prefix-list contents are outside this plan policy and cannot establish restricted ingress.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_UNRESTRICTED_INGRESS": {
+            "outcome": "fail",
+            "attribute_path": [],
+            "explanation": "An observed ingress permission allows unrestricted direct SSH.",
+            "remediation": "Restrict the source of SSH access or remove the ingress permission."
+          },
+          "SSH_RULE_NO_UNRESTRICTED_INGRESS": {
+            "outcome": "pass",
+            "attribute_path": [],
+            "explanation": "No unrestricted direct SSH permission was established in the observed scope.",
+            "remediation": "No remediation is required within this policy scope."
+          },
+          "SSH_RULE_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required ingress observations are sensitive.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required ingress observations are unknown.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Unknown-value metadata is incomplete.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "The desired ingress state is unavailable.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required ingress observations or a usable source are missing.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required ingress observations are null.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required ingress observations have an unsupported shape or value type.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          },
+          "SSH_RULE_PREFIX_LIST_UNRESOLVED": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Prefix-list contents are outside this plan policy and cannot establish restricted ingress.",
+            "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
           }
         }
       }

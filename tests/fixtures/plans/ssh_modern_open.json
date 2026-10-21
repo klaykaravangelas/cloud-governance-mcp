@@ -1,0 +1,46 @@
+{
+  "format_version": "1.2",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_vpc_security_group_ingress_rule.example",
+      "type": "aws_vpc_security_group_ingress_rule",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "ip_protocol": "-1",
+          "cidr_ipv4": null,
+          "cidr_ipv6": "::/0"
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_vpc_security_group_ingress_rule.example",
+          "type": "aws_vpc_security_group_ingress_rule",
+          "name": "example",
+          "mode": "managed",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "ip_protocol": "-1",
+            "from_port": 22,
+            "to_port": 22,
+            "cidr_ipv4": null,
+            "cidr_ipv6": "::/0"
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  }
+}

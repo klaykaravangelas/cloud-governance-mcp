@@ -116,7 +116,7 @@ class EvaluationService:
         """Resolve selection before file I/O, then load/normalize exactly once."""
         catalog = load_catalog()
         catalog.select(ids)
-        snapshot = self._adapter.normalize(self._loader.read_plan(path))
+        snapshot = self._adapter.normalize(self._loader.read_plan(path), ids)
         return snapshot, catalog, to_evaluation_input(snapshot, ids)
 
     def _report(

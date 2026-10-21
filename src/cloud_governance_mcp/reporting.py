@@ -37,7 +37,7 @@ def build_report(
             bucket = "skipped_data"
         elif item.resource.action_category == "delete":
             bucket = "skipped_deleted"
-        elif is_candidate(item):
+        elif is_candidate(item, policy_ids):
             bucket = "candidate_resources"
         else:
             bucket = "unsupported_resources"

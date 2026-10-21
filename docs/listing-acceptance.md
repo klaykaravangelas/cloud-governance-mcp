@@ -6,6 +6,12 @@ the existing evaluator catalog, covering standalone RDS instances. No new policy
 Python dependency, OPA execution behavior or analysis/evaluation response field
 was introduced. The catalog now explicitly records `required_configuration: []`.
 
+This is the historical L1 checkpoint. Specification 004 expands AWS-RDS-001 to
+v1.1.0 and updates the saved catalog/evaluation reports. See
+[RDS evidence](rds-acceptance.md) for that checkpoint and
+[SSH evidence](ssh-acceptance.md) for current two-policy coverage; the original
+counts/scope below describe L1.
+
 ## Executed verification
 
 Verified on macOS arm64, Python 3.14.7, pinned MCP SDK 2.3.0 and OPA 1.21.2:

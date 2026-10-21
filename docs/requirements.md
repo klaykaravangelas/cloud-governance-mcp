@@ -1,7 +1,7 @@
 # Requirements and acceptance criteria
 
-Status: analysis A1–A7, evaluation E1–E5 and listing L1a–L1d complete; expanded v0.1 policies planned.
-Updated: 2026-10-19.
+Status: analysis, evaluation, listing, expanded RDS and SSH ingress implemented; tags and S3 remain planned.
+Updated: 2026-10-21.
 
 ## Purpose and scope
 
@@ -16,17 +16,34 @@ analysis specification is [approved](specifications/analyze-terraform-plan.md).
 Bootstrap, typed contracts, contained file loading, Terraform normalization, and
 the analysis service/summaries and MCP stdio interface are complete. A7 adds the
 [client walkthrough](trying-analysis.md) and [acceptance evidence](analysis-acceptance.md).
-Evaluation implements standalone RDS encryption and listing exposes its catalog.
-Expanded coverage and the complete v0.1 MVP remain planned.
+Evaluation implements standalone RDS, cluster and conservative member encryption,
+and unrestricted SSH ingress. Listing exposes both policies. The complete
+four-family v0.1 MVP remains in progress.
 
 [Specification 002](specifications/evaluate-terraform-policies.md) defines the implemented
 first evaluation increment and EV-01–EV-24 acceptance cases. See
-[evidence](evaluation-acceptance.md). Only standalone RDS encryption is currently
-implemented; the rest of the policy catalog below remains planned.
+[evidence](evaluation-acceptance.md). Specification 004 extends that original
+standalone scope; Specification 005 adds SSH. Tags and S3 remain planned.
 
 [Specification 003](specifications/list-policies.md) defines the implemented
 listing response, catalog-only execution and LP-01–LP-14 acceptance cases. See
 [listing evidence](listing-acceptance.md).
+
+[Specification 004](specifications/expanded-rds-encryption.md) is approved and
+implemented locally, with M1a–M1e and RD-01–RD-22. It adds AWS-RDS-001 v1.1.0 for direct
+cluster checks and conservative `aws_rds_cluster_instance` inheritance using known
+same-plan identifiers/ARN context. Unresolved or computed relationships stay
+indeterminate. See [RDS acceptance evidence](rds-acceptance.md), including the
+existing Codex connection's pending reload smoke test.
+
+[Specification 005](specifications/unrestricted-ssh-ingress.md) implements M2:
+AWS-SG-001, three Terraform rule representations, minimal masked network
+projection and two-policy selection/accounting. See [SSH acceptance](ssh-acceptance.md)
+for SG-01–SG-25 evidence. Relevant uncertainty
+must remain explicit, while an independently proved safe predicate can rule out
+this specific exposure. Prefix lists and effective network reachability are not
+inferred. Earlier user-reported MCP testing and the pending live SSH reload check
+are recorded separately from automated stdio verification.
 
 ## Tool responsibilities and progression
 
@@ -62,9 +79,9 @@ provided plan, not the security of a deployed AWS account.
 
 | Policy ID | Severity | v0.1 behavior and scope |
 | --- | --- | --- |
-| AWS-SG-001 | high | Flag inbound TCP rules whose port range includes 22, or all-protocol rules, open to `0.0.0.0/0` or `::/0`. Cover inline `aws_security_group.ingress`, `aws_security_group_rule` with ingress type, and `aws_vpc_security_group_ingress_rule`. Egress, self references, and private CIDRs do not trigger this rule. Unknown protocol, ports, or CIDRs yield indeterminate checks unless another known rule proves a violation. |
+| AWS-SG-001 | high | Implemented in Specification 005: flag inbound TCP port 22/ranges or all-protocol rules with an individual world-wide IPv4/IPv6 CIDR. Cover inline `aws_security_group.ingress`, legacy `aws_security_group_rule` ingress and modern `aws_vpc_security_group_ingress_rule`. Known egress is not applicable; known non-SSH permissions or complete known non-world sources pass within this rule's scope. Relevant unresolved inputs/prefix lists are indeterminate unless another known predicate resolves the rule. No CIDR-union or live reachability analysis. |
 | AWS-TAG-001 | medium | Require nonempty string values for operator-configured tag keys; proposed defaults are `Environment`, `Owner`, and `Project`, case sensitive. Start with an explicit taggable-type list: `aws_instance`, `aws_security_group`, `aws_db_instance`, `aws_rds_cluster`, and `aws_s3_bucket`. Use known `tags_all` where available, otherwise `tags`; unknown or sensitive required values are indeterminate. Do not demand tags on every AWS resource type. |
-| AWS-RDS-001 | high | Require explicit known `storage_encrypted=true` on `aws_db_instance` and `aws_rds_cluster`. Known false fails; missing, unknown, or sensitive values are indeterminate. An instance that inherits encryption through `cluster_identifier` needs an unambiguous cluster association; otherwise report indeterminate. The first evaluation increment covers standalone `aws_db_instance` only. |
+| AWS-RDS-001 | high | Implemented v1.1.0: require explicit known `storage_encrypted=true` on standalone `aws_db_instance` and direct `aws_rds_cluster`. Known false fails; missing, unknown or sensitive values are indeterminate. `aws_rds_cluster_instance` inherits only through a unique same-plan cluster with known matching identifier/ARN context. Its computed encryption copy is ignored. Unresolved associations remain indeterminate. |
 | AWS-S3-001 | high | Check all four public-access-block flags on `aws_s3_bucket_public_access_block`: `block_public_acls`, `ignore_public_acls`, `block_public_policy`, and `restrict_public_buckets`. Any known false fails; all known true pass. For `aws_s3_bucket`, require a provable association with a block resource in the plan; unresolved or absent associations are indeterminate with an explicit coverage reason. Do not infer live defaults or account-level settings. This does not analyze arbitrary bucket policies or ACLs. |
 
 For each implemented policy, acceptance requires compliant, violating,

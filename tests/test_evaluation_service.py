@@ -34,7 +34,7 @@ async def evaluate(data, tmp_path, opa_path, **budgets):
             EvaluationSettings(opa_path=str(opa_path), **budgets),
             loader=loader,
         )
-        return await service.evaluate("plan.json")
+        return await service.evaluate("plan.json", ["AWS-RDS-001"])
 
 
 @pytest.mark.parametrize(
@@ -114,7 +114,7 @@ async def test_no_applicable_checks_never_becomes_pass(tmp_path, opa_path, kind)
         r["change"]["actions"] = ["delete"]
         r["change"]["after"] = None
     elif kind == "unsupported":
-        r["type"] = "aws_rds_cluster"
+        r["type"] = "aws_rds_global_cluster"
     else:
         r["provider_name"] = "example.invalid/other/provider"
     report = await evaluate(data, tmp_path, opa_path)
@@ -140,7 +140,7 @@ async def test_engine_failure_is_atomic_and_analysis_remains_independent(tmp_pat
     settings = AnalysisSettings(allowed_roots=[str(tmp_path)])
     with RestrictedPlanLoader(settings) as loader:
         service = EvaluationService(settings, EvaluationSettings(), loader=loader)
-        report = await service.evaluate("plan.json")
+        report = await service.evaluate("plan.json", ["AWS-RDS-001"])
         assert report.evaluation_status == "failed"
         assert report.compliance_status == "indeterminate"
         assert report.errors[0].code == "OPA_NOT_CONFIGURED"
@@ -163,7 +163,7 @@ async def test_injected_incomplete_result_is_revalidated(tmp_path):
         service = EvaluationService(
             settings, EvaluationSettings(), loader=loader, engine=IncompleteEngine()
         )
-        report = await service.evaluate("plan.json")
+        report = await service.evaluate("plan.json", ["AWS-RDS-001"])
         assert report.errors[0].code == "OPA_OUTPUT_INVALID"
         assert report.summary.unevaluated_checks == 1
 
@@ -182,11 +182,11 @@ async def test_invalid_selection_denied_path_and_busy_precede_engine_work(tmp_pa
         await service.evaluate("plan.json", ["SENTINEL_POLICY"])
     assert error.value.code == EvaluationCode.INVALID_POLICY_SELECTION
     assert not started.is_set()
-    active = asyncio.create_task(service.evaluate("plan.json"))
+    active = asyncio.create_task(service.evaluate("plan.json", ["AWS-RDS-001"]))
     try:
         assert await asyncio.to_thread(started.wait, 2)
         with pytest.raises(EvaluationFailure) as error:
-            await service.evaluate("plan.json")
+            await service.evaluate("plan.json", ["AWS-RDS-001"])
         assert error.value.code == EvaluationCode.SERVER_BUSY
         active.cancel()
         await asyncio.sleep(0.02)
@@ -195,7 +195,9 @@ async def test_invalid_selection_denied_path_and_busy_precede_engine_work(tmp_pa
         release.set()
     with pytest.raises(asyncio.CancelledError):
         await active
-    assert (await service.evaluate("plan.json")).evaluation_status == "failed"
+    assert (
+        await service.evaluate("plan.json", ["AWS-RDS-001"])
+    ).evaluation_status == "failed"
     with RestrictedPlanLoader(settings) as loader:
         safe = EvaluationService(settings, EvaluationSettings(), loader=loader)
         with pytest.raises(AnalysisError) as error:
@@ -254,7 +256,7 @@ async def test_opa_input_excludes_sensitive_and_unrelated_values(
             loader=loader,
             engine=CapturingEngine(),
         )
-        report = await service.evaluate("plan.json")
+        report = await service.evaluate("plan.json", ["AWS-RDS-001"])
     assert report.indeterminate_checks[0].reason_code == "RDS_ENCRYPTION_SENSITIVE"
     assert "SENTINEL_" not in "".join(captured) + report.model_dump_json() + caplog.text
     assert "password" not in captured[0]
@@ -275,7 +277,7 @@ async def test_analysis_runs_while_evaluation_owns_its_independent_slot(tmp_path
         service = EvaluationService(
             settings, EvaluationSettings(), loader=loader, engine=BlockingEngine()
         )
-        active = asyncio.create_task(service.evaluate("plan.json"))
+        active = asyncio.create_task(service.evaluate("plan.json", ["AWS-RDS-001"]))
         try:
             await asyncio.wait_for(started.wait(), 2)
             report = await AnalysisService(settings, loader=loader).analyze("plan.json")

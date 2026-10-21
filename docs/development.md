@@ -1,6 +1,9 @@
 # Development setup and verification
 
-Current stage: Specification 002 adds first-policy evaluation alongside analysis.
+Current stage: Specifications 001–005 provide analysis, evaluation, listing,
+expanded RDS and SSH ingress coverage. See [current SSH evidence](ssh-acceptance.md),
+the [SSH walkthrough](trying-ssh.md) and [M1 evidence](rds-acceptance.md).
+Earlier sections below preserve historical checkpoint counts.
 See [evaluation evidence](evaluation-acceptance.md), [OPA setup](opa-setup.md) and
 [the evaluation walkthrough](trying-evaluation.md). The A1–A7 notes below record
 the original analysis increments and their historical check counts.
@@ -544,4 +547,46 @@ uv run --locked --no-editable python examples/client.py --list-policies --legacy
 
 The saved response is `examples/reports/policy-list.json`. `--list-tools` continues
 to discover MCP functions, whereas `--list-policies` discovers governance rules.
-All three tools are now exposed; expanded policy coverage remains future work.
+All three tools are now exposed. Specification 004 expands RDS coverage below.
+
+## Expanded RDS encryption (M1)
+
+Approved Specification 004 adds AWS-RDS-001 v1.1.0 for standalone instances,
+direct clusters and conservative cluster-member inheritance. `rds_associations.py`
+uses transient masked identifiers/ARN context and linear indexes, keeping only
+safe states and a resolved Terraform address. Member encryption copies are ignored;
+OPA owns the decision using the target's projected encryption. The graph input
+is schema 2, while public/engine report envelopes remain schema 1. No dependencies,
+CLI options, capabilities or tool inputs changed.
+
+Verified 2026-10-21: **826 Python tests, no skips**, **13 real Rego tests**,
+Ruff, locked environment/dependency checks and source/wheel builds. See the
+[acceptance record](rds-acceptance.md) for installed checks and the existing
+Codex process's pending reconnect smoke test. The three new fixture/report pairs
+show pass, fail and unknown-ARN uncertainty; they require no AWS credentials or
+Terraform execution. Follow the [cluster walkthrough](trying-rds-clusters.md).
+
+## SSH ingress and two-policy evaluation (M2)
+
+Approved Specification 005 adds AWS-SG-001 v1.0.0 while keeping AWS-RDS-001
+v1.1.0. Omission now selects both IDs; use explicit selection for historical
+RDS-only report comparisons. `ssh_models.py` and `ssh_projection.py` provide
+strict masked observations for inline, legacy and modern rules. Rego owns
+exposure decisions. Engine input is schema 3, while public/engine output and
+catalog envelopes remain schema 1. No dependency, tool or CLI setting was added.
+
+Verified 2026-10-21 on macOS arm64: **1,009 Python tests, no skips**, **29 real
+Rego tests**, Ruff lint/format (88 files), strict Rego/format, uv lock/environment/
+dependency checks and source/wheel builds passed. The documented OPA-free subset
+passed **857 tests** with `CLOUD_GOVERNANCE_OPA=/not/installed/opa`. Host permissions
+allowed the required local Unix socket case; no AWS credentials or Terraform were
+needed. See [verification commands](trying-evaluation.md#5-verify-locally).
+
+Separate fresh wheel/source installations outside the checkout passed SDK
+auto/legacy stdio checks with isolated imports, console/module entrypoints, both
+policies, analysis, eight saved report comparisons, the policy-selection matrix
+and containment denial. Production files/assets matched source byte-for-byte;
+test Rego and the OPA binary stayed out of the wheel. Details and SG-01–SG-25
+traceability are in [SSH acceptance](ssh-acceptance.md). Follow the
+[SSH walkthrough](trying-ssh.md) for manual calls. Live Codex SSH reload testing
+and Linux execution remain separately unverified.

@@ -3,15 +3,17 @@
   "policies": [
     {
       "policy_id": "AWS-RDS-001",
-      "policy_version": "1.0.0",
+      "policy_version": "1.1.0",
       "title": "RDS storage encryption",
-      "description": "Require explicit storage encryption for standalone AWS RDS instances.",
+      "description": "Require explicit storage encryption for supported AWS RDS instances and clusters, including resolvable cluster members.",
       "severity": "high",
       "supported_provider_names": [
         "registry.terraform.io/hashicorp/aws"
       ],
       "supported_resource_types": [
-        "aws_db_instance"
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance"
       ],
       "required_paths": [
         [
@@ -19,9 +21,82 @@
         ],
         [
           "cluster_identifier"
+        ],
+        [
+          "arn"
+        ],
+        [
+          "region"
         ]
       ],
-      "scope_description": "Standalone aws_db_instance resources only; cluster associations are not resolved.",
+      "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred.",
+      "required_configuration": []
+    },
+    {
+      "policy_id": "AWS-SG-001",
+      "policy_version": "1.0.0",
+      "title": "Unrestricted SSH ingress",
+      "description": "Detect observed ingress rules permitting direct TCP SSH from an individual world-wide IPv4 or IPv6 CIDR.",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_security_group",
+        "aws_security_group_rule",
+        "aws_vpc_security_group_ingress_rule"
+      ],
+      "required_paths": [
+        [
+          "ingress"
+        ],
+        [
+          "type"
+        ],
+        [
+          "protocol"
+        ],
+        [
+          "ip_protocol"
+        ],
+        [
+          "from_port"
+        ],
+        [
+          "to_port"
+        ],
+        [
+          "cidr_blocks"
+        ],
+        [
+          "ipv6_cidr_blocks"
+        ],
+        [
+          "cidr_ipv4"
+        ],
+        [
+          "cidr_ipv6"
+        ],
+        [
+          "prefix_list_ids"
+        ],
+        [
+          "prefix_list_id"
+        ],
+        [
+          "self"
+        ],
+        [
+          "security_groups"
+        ],
+        [
+          "source_security_group_id"
+        ],
+        [
+          "referenced_security_group_id"
+        ]
+      ],
+      "scope_description": "Observed inline ingress and standalone ingress rules only. Prefix-list contents remain unresolved; live reachability and unions of narrower CIDRs are not analyzed.",
       "required_configuration": []
     }
   ]
