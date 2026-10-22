@@ -1,7 +1,7 @@
 # Requirements and acceptance criteria
 
-Status: analysis, evaluation, listing, expanded RDS and SSH ingress implemented; tags and S3 remain planned.
-Updated: 2026-10-21.
+Status: all three tools and four initial policy families implemented; M5 acceptance consolidation remains planned.
+Updated: 2026-10-22.
 
 ## Purpose and scope
 
@@ -17,13 +17,13 @@ Bootstrap, typed contracts, contained file loading, Terraform normalization, and
 the analysis service/summaries and MCP stdio interface are complete. A7 adds the
 [client walkthrough](trying-analysis.md) and [acceptance evidence](analysis-acceptance.md).
 Evaluation implements standalone RDS, cluster and conservative member encryption,
-and unrestricted SSH ingress. Listing exposes both policies. The complete
-four-family v0.1 MVP remains in progress.
+unrestricted SSH ingress, mandatory resource tags and S3 public-access protection.
+Listing exposes all four policies; final v0.1 acceptance consolidation remains planned.
 
 [Specification 002](specifications/evaluate-terraform-policies.md) defines the implemented
 first evaluation increment and EV-01–EV-24 acceptance cases. See
 [evidence](evaluation-acceptance.md). Specification 004 extends that original
-standalone scope; Specification 005 adds SSH. Tags and S3 remain planned.
+standalone scope; Specifications 005–007 add SSH, mandatory tags and S3 protection.
 
 [Specification 003](specifications/list-policies.md) defines the implemented
 listing response, catalog-only execution and LP-01–LP-14 acceptance cases. See
@@ -44,6 +44,16 @@ must remain explicit, while an independently proved safe predicate can rule out
 this specific exposure. Prefix lists and effective network reachability are not
 inferred. Earlier user-reported MCP testing and the pending live SSH reload check
 are recorded separately from automated stdio verification.
+
+[Specification 006](specifications/mandatory-resource-tags.md) implements M3: AWS-TAG-001, five explicit taggable types, operator-configured required
+keys defaulting to `Environment`, `Owner` and `Project`, masked authoritative
+`tags_all`/fallback `tags` observations, and three-policy integration. TG-01–TG-22
+have [acceptance evidence](tags-acceptance.md). TAG is selectable with medium severity.
+
+[Specification 007](specifications/s3-public-access-protection.md) implements M4:
+AWS-S3-001 v1.0.0, four block flags, conservative known-name/provider-context
+association and four-policy integration. See [S3 acceptance](s3-acceptance.md)
+for S3-01–S3-20 evidence and supported association limits.
 
 ## Tool responsibilities and progression
 
@@ -80,9 +90,9 @@ provided plan, not the security of a deployed AWS account.
 | Policy ID | Severity | v0.1 behavior and scope |
 | --- | --- | --- |
 | AWS-SG-001 | high | Implemented in Specification 005: flag inbound TCP port 22/ranges or all-protocol rules with an individual world-wide IPv4/IPv6 CIDR. Cover inline `aws_security_group.ingress`, legacy `aws_security_group_rule` ingress and modern `aws_vpc_security_group_ingress_rule`. Known egress is not applicable; known non-SSH permissions or complete known non-world sources pass within this rule's scope. Relevant unresolved inputs/prefix lists are indeterminate unless another known predicate resolves the rule. No CIDR-union or live reachability analysis. |
-| AWS-TAG-001 | medium | Require nonempty string values for operator-configured tag keys; proposed defaults are `Environment`, `Owner`, and `Project`, case sensitive. Start with an explicit taggable-type list: `aws_instance`, `aws_security_group`, `aws_db_instance`, `aws_rds_cluster`, and `aws_s3_bucket`. Use known `tags_all` where available, otherwise `tags`; unknown or sensitive required values are indeterminate. Do not demand tags on every AWS resource type. |
+| AWS-TAG-001 | medium | Implemented in Specification 006: require nonblank string values for operator-configured keys, starting with `Environment`, `Owner`, and `Project`, case sensitive. Scope: `aws_instance`, `aws_security_group`, `aws_db_instance`, `aws_rds_cluster`, `aws_s3_bucket`. Prefer authoritative `tags_all`; use `tags` only when `tags_all` is provably absent, never to bypass uncertainty. Missing/blank/null is a violation; relevant unknown/sensitive/invalid data is indeterminate unless another required key proves failure. Do not demand tags on every AWS type. |
 | AWS-RDS-001 | high | Implemented v1.1.0: require explicit known `storage_encrypted=true` on standalone `aws_db_instance` and direct `aws_rds_cluster`. Known false fails; missing, unknown or sensitive values are indeterminate. `aws_rds_cluster_instance` inherits only through a unique same-plan cluster with known matching identifier/ARN context. Its computed encryption copy is ignored. Unresolved associations remain indeterminate. |
-| AWS-S3-001 | high | Check all four public-access-block flags on `aws_s3_bucket_public_access_block`: `block_public_acls`, `ignore_public_acls`, `block_public_policy`, and `restrict_public_buckets`. Any known false fails; all known true pass. For `aws_s3_bucket`, require a provable association with a block resource in the plan; unresolved or absent associations are indeterminate with an explicit coverage reason. Do not infer live defaults or account-level settings. This does not analyze arbitrary bucket policies or ACLs. |
+| AWS-S3-001 | high | Implemented in Specification 007: check all four public-access-block flags on `aws_s3_bucket_public_access_block`: `block_public_acls`, `ignore_public_acls`, `block_public_policy`, and `restrict_public_buckets`. Any known false fails; all known true pass. For `aws_s3_bucket`, require a provable association with a block resource in the plan; unresolved or absent associations are indeterminate with an explicit coverage reason. Do not infer live defaults or account-level settings. This does not analyze arbitrary bucket policies or ACLs. |
 
 For each implemented policy, acceptance requires compliant, violating,
 non-applicable, missing-value, unknown-value, and sensitive-value cases. Add nested

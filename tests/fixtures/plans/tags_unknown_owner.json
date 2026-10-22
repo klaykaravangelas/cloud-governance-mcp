@@ -1,0 +1,54 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_instance.example",
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "tags_all": {
+            "Environment": "development",
+            "Owner": "SENTINEL_UNKNOWN_TAG",
+            "Project": "governance-demo"
+          }
+        },
+        "after_unknown": {
+          "tags_all": {
+            "Owner": true
+          }
+        },
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_instance.example",
+          "mode": "managed",
+          "type": "aws_instance",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "tags_all": {
+              "Environment": "development",
+              "Owner": "SENTINEL_UNKNOWN_TAG",
+              "Project": "governance-demo"
+            }
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  }
+}

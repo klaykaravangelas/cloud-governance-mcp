@@ -46,7 +46,7 @@ def test_public_metadata_is_the_selectable_catalog_projection():
     report = project_catalog(catalog)
     assert report == project_catalog(catalog)
     assert report.schema_version == "1"
-    assert len(report.policies) == 2
+    assert len(report.policies) == 4
     public = report.policies[0]
     internal = catalog.select([public.policy_id])[0]
     for field in type(public).model_fields:

@@ -21,6 +21,7 @@ from cloud_governance_mcp.files import RestrictedPlanLoader
 from cloud_governance_mcp.listing import PolicyListingService
 from cloud_governance_mcp.server import create_server, run_stdio
 from cloud_governance_mcp.service import AnalysisService
+from cloud_governance_mcp.tag_models import DEFAULT_TAG_KEYS
 
 
 class _SafeArgumentParser(argparse.ArgumentParser):
@@ -63,8 +64,14 @@ def parse_configuration(
         "--opa-path",
         help="Absolute path to the pinned OPA executable; optional for analysis.",
     )
+    parser.add_argument(
+        "--required-tag-key",
+        dest="required_tag_keys",
+        action="append",
+        help="Required tag key; repeat to replace default Environment/Owner/Project keys.",
+    )
     for name in EvaluationSettings.model_fields:
-        if name == "opa_path":
+        if name in {"opa_path", "required_tag_keys"}:
             continue
         default = EvaluationSettings.model_fields[name].default
         parser.add_argument(
@@ -77,6 +84,8 @@ def parse_configuration(
         "--version", action="version", version=version("cloud-governance-mcp")
     )
     arguments = vars(parser.parse_args(argv))
+    if arguments["required_tag_keys"] is None:
+        arguments["required_tag_keys"] = list(DEFAULT_TAG_KEYS)
     return (
         validate_analysis_settings(
             {key: arguments[key] for key in AnalysisSettings.model_fields}

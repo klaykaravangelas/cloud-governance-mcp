@@ -7,6 +7,7 @@ from pydantic import Field, ValidationError, model_validator
 
 from cloud_governance_mcp.errors import ConfigurationError
 from cloud_governance_mcp.models import ContractModel, PlanPath, PositiveInt
+from cloud_governance_mcp.tag_models import DEFAULT_TAG_KEYS, TagConfiguration, TagKeys
 
 
 class AnalysisSettings(ContractModel):
@@ -51,6 +52,9 @@ class EvaluationSettings(ContractModel):
     opa_eval_timeout_seconds: PositiveInt = 5
     opa_process_timeout_seconds: PositiveInt = 10
     max_evaluation_bytes: PositiveInt = 4_194_304
+    required_tag_keys: TagKeys = Field(
+        default_factory=lambda: list(DEFAULT_TAG_KEYS), repr=False
+    )
 
     @model_validator(mode="after")
     def absolute_executable_and_deadlines(self) -> Self:
@@ -59,6 +63,9 @@ class EvaluationSettings(ContractModel):
             raise ValueError("Executable must be absolute.")
         if self.opa_process_timeout_seconds <= self.opa_eval_timeout_seconds:
             raise ValueError("Process deadline must exceed evaluation timeout.")
+        self.required_tag_keys = TagConfiguration(
+            required_tag_keys=self.required_tag_keys
+        ).required_tag_keys
         return self
 
 

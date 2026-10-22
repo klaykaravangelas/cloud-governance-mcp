@@ -26,6 +26,8 @@ from cloud_governance_mcp.evaluation_models import (
     ProjectedResource,
 )
 from cloud_governance_mcp.json_codec import decode_object
+from cloud_governance_mcp.s3_checks import allowed_s3_reasons
+from cloud_governance_mcp.tag_checks import valid_tag_check
 
 OPA_VERSION = "1.21.2"
 QUERY = "data.cloud_governance.report"
@@ -55,9 +57,19 @@ async def _compute[T](function: Callable[..., T], *args: object) -> T:
     return result
 
 
-def _input_bytes(request: EvaluationInput, limit: int) -> bytes:
+def _input_bytes(
+    request: EvaluationInput,
+    limit: int,
+    required_tag_keys: tuple[str, ...] | None = None,
+) -> bytes:
     """Measure the complete compact UTF-8 input, never a truncated projection."""
     request = EvaluationInput.model_validate(request)
+    if (
+        request.tag_configuration is not None
+        and required_tag_keys is not None
+        and tuple(request.tag_configuration.required_tag_keys) != required_tag_keys
+    ):
+        raise EvaluationFailure(EvaluationCode.OPA_OUTPUT_INVALID)
     payload = request.model_dump_json().encode("utf-8")
     if len(payload) > limit:
         raise EvaluationFailure(EvaluationCode.OPA_INPUT_LIMIT_EXCEEDED)
@@ -246,12 +258,16 @@ def validate_checks(
                 raise ValueError("Invalid pair membership.")
             seen.add(key)
             template = policies[check.policy_id].reasons[check.reason_code]
-            if (
-                check.outcome != template.outcome
-                or check.attribute_path != template.attribute_path
+            if check.outcome != template.outcome or (
+                check.policy_id != "AWS-TAG-001"
+                and check.attribute_path != template.attribute_path
             ):
                 raise ValueError("Invalid reason combination.")
             resource = resources[check.resource_address]
+            if check.policy_id == "AWS-TAG-001" and not valid_tag_check(
+                check, resource
+            ):
+                raise ValueError("Invalid configured tag path/state.")
             excluded = (
                 "DATA_SOURCE_SKIPPED"
                 if resource.mode == "data"
@@ -276,8 +292,11 @@ def validate_checks(
                 )
             ):
                 raise ValueError("Invalid applicability.")
-            if excluded is None and check.reason_code not in _allowed_reasons(
-                resource, resources
+            if (
+                excluded is None
+                and check.policy_id != "AWS-TAG-001"
+                and check.reason_code
+                not in _allowed_reasons(resource, resources, check.policy_id)
             ):
                 raise ValueError("Invalid reason scope/state.")
         if seen != expected:
@@ -289,18 +308,16 @@ def validate_checks(
 
 
 def _allowed_reasons(
-    resource: ProjectedResource, resources: dict[str, ProjectedResource]
+    resource: ProjectedResource, resources: dict[str, ProjectedResource], policy_id: str
 ) -> set[str]:
     """Validate reason applicability without deciding a known boolean's outcome.
 
     Rego owns pass/fail. This guard prevents an otherwise valid catalog reason
     from describing a different resource, association state or encryption state.
     """
-    if resource.resource_type in {
-        "aws_security_group",
-        "aws_security_group_rule",
-        "aws_vpc_security_group_ingress_rule",
-    }:
+    if policy_id == "AWS-S3-001":
+        return allowed_s3_reasons(resource, resources)
+    if policy_id == "AWS-SG-001":
         # Policy/type applicability was checked above; SSH boolean decisions stay
         # in Rego. Validate representation/direction and available reason states.
         projection = resource.ssh_state
@@ -381,6 +398,7 @@ class OpaEngine:
 
     def __init__(self, settings: EvaluationSettings) -> None:
         self.settings = validate_evaluation_settings(settings)
+        self._required_tag_keys = tuple(self.settings.required_tag_keys)
         self._verified = False
         self._path = settings.opa_path
         if self._path is not None:
@@ -394,7 +412,10 @@ class OpaEngine:
     ) -> EngineReport:
         """Evaluate package policies, returning only a validated complete batch."""
         payload = await _compute(
-            _input_bytes, request, self.settings.max_opa_input_bytes
+            _input_bytes,
+            request,
+            self.settings.max_opa_input_bytes,
+            self._required_tag_keys,
         )
         if self._path is None:
             raise EvaluationFailure(EvaluationCode.OPA_NOT_CONFIGURED)
@@ -427,6 +448,8 @@ class OpaEngine:
                     "catalog.json",
                     "rego/rds.rego",
                     "rego/ssh.rego",
+                    "rego/tags.rego",
+                    "rego/s3.rego",
                 ):
                     if not assets.joinpath(relative).is_file():
                         raise ValueError("Missing assets.")
@@ -445,6 +468,10 @@ class OpaEngine:
                 str(assets / "rego/rds.rego"),
                 "--data",
                 str(assets / "rego/ssh.rego"),
+                "--data",
+                str(assets / "rego/tags.rego"),
+                "--data",
+                str(assets / "rego/s3.rego"),
                 "--data",
                 str(assets / "catalog.json"),
                 QUERY,

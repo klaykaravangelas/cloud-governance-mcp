@@ -4,7 +4,8 @@ Status: Specifications 001–003 implemented; A1–A7, E1–E5 and L1a–L1d com
 Specification 004's M1 runtime is implemented; existing Codex reload smoke testing
 remains observer-specific, alongside the user's successful hands-on report. See
 [RDS acceptance evidence](rds-acceptance.md). Specification 005 is approved and implemented; see [SSH evidence](ssh-acceptance.md).
-Updated: 2026-10-21.
+Specification 006 implements mandatory tags; see [TAG evidence](tags-acceptance.md).
+Updated: 2026-10-22.
 
 Build in this order: `analyze_terraform_plan`, `evaluate_terraform_policies`,
 `list_policies`, then expanded policy coverage. Each task has a narrow result and
@@ -182,14 +183,45 @@ service, tool or configuration setting is proposed. Prefix-list contents,
 CIDR-union reachability, tags/S3 and future infrastructure capabilities stay out
 of this increment. Existing connection recovery does not block specification work.
 
+## Increment 6: mandatory resource tags (implemented)
+
+[Specification 006](specifications/mandatory-resource-tags.md) defines M3 and
+TG-01–TG-22. The user accepted Environment/Owner/Project as initial defaults and
+requested the specification, then authorized implementation on 2026-10-22.
+M3a–M3e are implemented; [TAG acceptance](tags-acceptance.md) maps TG-01–TG-22
+to executed checks and separates the pending live-host reload. The table
+preserves prospective-assets staging before activation. Omission now selects
+all three policies.
+
+| Task | Depends on | Deliverable | Verification / done when |
+| --- | --- | --- | --- |
+| M3a: Contracts/configuration | Reviewed specification and implementation authorization | Strict startup required-key settings, TAG observation variants/schema 4 and prospective per-ID metadata/path contracts. | TG-02–TG-03/TG-10–TG-12 pure tests; runtime catalog remains two-policy. |
+| M3b: Masked projection | M3a | Five-type source selection, cross-copy sensitivity, minimal key states and fixed work limits. | TG-01/TG-04–TG-10/TG-15–TG-17 without OPA, Terraform or AWS. |
+| M3c: Rego and validation | M3b | Actual TAG aggregation, prospective dispatcher/catalog, validated configured-key paths and safe rendering. | TG-04–TG-08/TG-13–TG-15/TG-18–TG-19 through restricted OPA with unchanged capabilities. |
+| M3d: Activation | M3c | Wire schema 4, three policy entries/selection, medium severity, server flag and example-client forwarding together. | TG-11–TG-20 SDK/stdio, explicit RDS/SSH regressions and fixed startup/tool errors. |
+| M3e: Examples/evidence | M3d | Seven synthetic fixture/report pairs, illustrative HCL, walkthrough and TG acceptance record. | TG-01–TG-22 local/installed-package checks, exact override examples and separate live host evidence. |
+
+One check per resource/policy remains the rule. Missing/empty required tags fail;
+uncertain/invalid values cannot pass, and known failures beat uncertain siblings.
+No new MCP argument, dependency, AWS access or capability is planned. Existing
+connection reload observations remain separate from automated evidence and imply no new approval gate.
+
+## Increment 7: S3 protection
+
+[Specification 007](specifications/s3-public-access-protection.md) and implementation
+were authorized together on 2026-10-22. M4a–M4e cover pure contracts/association,
+real Rego/catalog checks, four-policy integration, examples and distribution
+verification. See [S3 acceptance](s3-acceptance.md). Omission now selects four IDs.
+No additional confirmation gate, dependency, setting or cloud access is introduced.
+
 ## Subsequent v0.1 policy increments
 
 | Task | Depends on | Deliverable | Verification / done when |
 | --- | --- | --- | --- |
 | M1: Expand RDS coverage (runtime implemented) | L1 | Specification 004's clusters and conservative Aurora member inheritance. | Automated evidence passes; live Codex reload check remains in the acceptance record. |
 | M2: Add SSH ingress policy (implemented) | L1/M1 | Follow Specification 005's M2a–M2e for three rule representations and two-policy integration. | SG-01–SG-25 establish exposure, uncertainty, privacy, counts and real OPA/stdio/package behavior. |
-| M3: Add mandatory tags policy | L1 | AWS-TAG-001, trusted startup tag-key configuration, and explicit supported taggable types. | Missing/empty keys, case sensitivity, inherited `tags_all`, unsupported/non-taggable types, unknown and sensitive values have tested outcomes. |
-| M4: Add S3 public access policy | L1 | AWS-S3-001 block flags and conservative bucket/block linkage. | All true, individual false flags, missing block, known/computed links, nested modules, unknown/sensitive flags, and absent account context have explicit tested coverage. |
+| M3: Add mandatory tags policy (implemented) | L1/M2; approved Specification 006 | Follow M3a–M3e for AWS-TAG-001, trusted startup keys, five types and three-policy integration. | TG-01–TG-22 establish source/mask/null rules, configured-key paths, counts and real OPA/stdio/package behavior. |
+| M4: Add S3 public access policy (implemented) | L1; authorized Specification 007 | M4a–M4e: AWS-S3-001 block flags and conservative bucket/block linkage. | All true, individual false flags, missing block, known/computed links, nested modules, unknown/sensitive flags, and absent account context have explicit tested coverage. |
 | M5: Verify complete v0.1 | M1–M4 | Representative mixed examples, updated docs, three-tool stdio walkthrough, and acceptance traceability against requirement IDs. | Full local verification passes without credentials/network; wheel includes production policies and no test-only Rego. Documented gaps cannot silently pass. No Docker, AWS adapter, or CI workflow is added. |
 
 ## Verification approach

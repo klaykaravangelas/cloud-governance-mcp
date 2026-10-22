@@ -1,12 +1,14 @@
 # Try Terraform policy evaluation
 
 The server exposes `analyze_terraform_plan`, `evaluate_terraform_policies` and
-`list_policies`. Two high-severity policies are implemented: **AWS-RDS-001**
+`list_policies`. Three policies are implemented: **AWS-RDS-001**
 v1.1.0 checks standalone instances, clusters and conservatively resolved cluster
 members; **AWS-SG-001** v1.0.0 checks direct unrestricted SSH ingress in three
-Terraform representations. The [listing tool](trying-listing.md) describes both.
-Tags and S3 policies remain planned. This walkthrough selects RDS explicitly;
-see [the SSH walkthrough](trying-ssh.md) for network and combined-policy examples.
+Terraform representations, both high severity. **AWS-TAG-001** v1.0.0 checks
+mandatory resource tags with medium severity. The [listing tool](trying-listing.md)
+describes all four. AWS-S3-001 checks bucket-level public-access protection; see
+the [S3 walkthrough](trying-s3.md). This walkthrough selects RDS explicitly;
+see the [SSH](trying-ssh.md) and [tags](trying-tags.md) walkthroughs for other scopes.
 
 ## 1. Prepare the local runtime
 
@@ -70,7 +72,7 @@ ARN context; computed or ambiguous links stay indeterminate. Follow the
 ## 4. Select a policy and use an AI host
 
 Add `--policy-id AWS-RDS-001` to explicitly select the rule; omission selects the
-enabled catalog: both IDs. Repeat `--policy-id` to select both explicitly.
+enabled catalog: all four IDs. Repeat `--policy-id` to select a subset explicitly.
 Empty, duplicate and unknown selections fail safely. Add
 `--legacy` to any example to test the older MCP initialization mode.
 
@@ -111,7 +113,7 @@ skips real policy tests. Tests can select an alternate absolute binary path usin
 server. To run analysis/listing plus pure evaluation contracts/projection checks without OPA:
 
 ```sh
-uv run --locked --no-editable pytest -q --ignore=tests/test_policy_execution.py --ignore=tests/test_opa_runner.py --ignore=tests/test_evaluation_service.py --ignore=tests/test_evaluation_mcp.py --ignore=tests/test_rds_evaluation.py --ignore=tests/test_ssh_evaluation.py
+uv run --locked --no-editable pytest -q --ignore=tests/test_policy_execution.py --ignore=tests/test_opa_runner.py --ignore=tests/test_evaluation_service.py --ignore=tests/test_evaluation_mcp.py --ignore=tests/test_rds_evaluation.py --ignore=tests/test_ssh_evaluation.py --ignore=tests/test_tag_evaluation.py --ignore=tests/test_s3_evaluation.py
 ```
 
 No AWS credentials, network access, Terraform, live resources, or infrastructure

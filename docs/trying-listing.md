@@ -21,23 +21,29 @@ uv run --locked --no-editable python examples/client.py --list-policies
 ```
 
 `--list-policies` calls our third function with `{}` and prints the
-[full saved response](../examples/reports/policy-list.json). It contains two rules:
+[full saved response](../examples/reports/policy-list.json). It contains four rules:
 
 | Policy | Version | Severity | Supported resources |
 | --- | --- | --- | --- |
 | `AWS-RDS-001` | `1.1.0` | `high` | `aws_db_instance`, `aws_rds_cluster`, `aws_rds_cluster_instance` |
+| `AWS-S3-001` | `1.0.0` | `high` | `aws_s3_bucket`, `aws_s3_bucket_public_access_block` |
 | `AWS-SG-001` | `1.0.0` | `high` | `aws_security_group`, `aws_security_group_rule`, `aws_vpc_security_group_ingress_rule` |
+| `AWS-TAG-001` | `1.0.0` | `medium` | `aws_instance`, `aws_security_group`, `aws_db_instance`, `aws_rds_cluster`, `aws_s3_bucket` |
 
 The response includes titles, descriptions, canonical AWS provider, required paths
 and scope limitations. RDS members need a unique known same-plan cluster with
 matching identifier and ARN context; computed or ambiguous links remain
 indeterminate. SSH covers direct individual world-wide CIDRs with TCP port 22 or
 all protocols; unresolved prefix lists are not expanded. See the
-[SSH walkthrough](trying-ssh.md) for its uncertainty rules. Tags, S3 and
-global-cluster rules are not advertised.
+[SSH walkthrough](trying-ssh.md) for its uncertainty rules. TAG checks nonblank
+Environment/Owner/Project defaults, with startup overrides; see the
+[tags walkthrough](trying-tags.md). S3 checks four bucket-level protection flags with conservative association; see the
+[S3 walkthrough](trying-s3.md). Global-cluster rules are not advertised.
 
-Both entries explicitly return `required_configuration: []`: neither needs
-policy-specific settings. Evaluation still requires OPA configuration.
+RDS/S3/SSH explicitly return `required_configuration: []`. TAG returns
+`["required_tag_keys"]`: this names its consumed setting, satisfied by startup
+defaults unless overridden. Listing exposes static default descriptions, not
+configured override values. Evaluation still requires OPA configuration.
 
 The example client starts and stops the real stdio server using the same Python
 environment. It explicitly supplies the fixture directory as the allowed root,

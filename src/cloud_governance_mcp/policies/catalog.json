@@ -307,6 +307,666 @@
         }
       },
       {
+        "policy_id": "AWS-S3-001",
+        "policy_version": "1.0.0",
+        "title": "S3 bucket public-access protection",
+        "description": "Require all four observed bucket-level public-access-block flags to be enabled.",
+        "severity": "high",
+        "enabled": true,
+        "supported_provider_names": [
+          "registry.terraform.io/hashicorp/aws"
+        ],
+        "supported_resource_types": [
+          "aws_s3_bucket",
+          "aws_s3_bucket_public_access_block"
+        ],
+        "required_paths": [
+          [
+            "bucket"
+          ],
+          [
+            "block_public_acls"
+          ],
+          [
+            "ignore_public_acls"
+          ],
+          [
+            "block_public_policy"
+          ],
+          [
+            "restrict_public_buckets"
+          ]
+        ],
+        "scope_description": "Checks bucket-level protection settings in the supplied plan. Bucket inheritance requires unique known names and shared provider configuration metadata. Unresolved links are indeterminate. Does not establish effective public reachability or inspect live, account-level, policy or ACL settings.",
+        "required_configuration": [],
+        "reasons": {
+          "DATA_SOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Data sources are outside this policy.",
+            "remediation": "No action is required by this policy."
+          },
+          "DELETED_RESOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Deletion-only resources are outside this policy.",
+            "remediation": "No action is required by this policy."
+          },
+          "RESOURCE_NOT_SUPPORTED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "This provider or resource type is outside this policy.",
+            "remediation": "No action is required by this policy."
+          },
+          "S3_BLOCK_ENABLED": {
+            "outcome": "pass",
+            "attribute_path": [],
+            "explanation": "The block has all four public-access protections enabled.",
+            "remediation": "Keep all four bucket-level protections enabled."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_ACLS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "block_public_acls"
+            ],
+            "explanation": "The block has block_public_acls disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_IGNORE_PUBLIC_ACLS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "ignore_public_acls"
+            ],
+            "explanation": "The block has ignore_public_acls disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_BLOCK_PUBLIC_POLICY_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "block_public_policy"
+            ],
+            "explanation": "The block has block_public_policy disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "restrict_public_buckets"
+            ],
+            "explanation": "The block has restrict_public_buckets disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_ENABLED": {
+            "outcome": "pass",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has all four public-access protections enabled.",
+            "remediation": "Keep all four bucket-level protections enabled."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_ACLS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_acls disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_IGNORE_PUBLIC_ACLS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has ignore_public_acls disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_BLOCK_PUBLIC_POLICY_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has block_public_policy disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved sensitive state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved unknown state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved unverified state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved unavailable state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved missing state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved null state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets in an unresolved invalid_type state.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_DISABLED": {
+            "outcome": "fail",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The associated block has restrict_public_buckets disabled.",
+            "remediation": "Provide known true values for all four bucket-level protection flags."
+          },
+          "S3_LINK_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: sensitive.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: unknown.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: unverified.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: unavailable.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_MISSING": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: missing.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_NULL": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: null.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: invalid_type.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_NOT_FOUND": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: not_found.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_AMBIGUOUS": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: ambiguous.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          },
+          "S3_LINK_CONTEXT_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "bucket"
+            ],
+            "explanation": "The bucket protection association is unresolved: context_unverified.",
+            "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+          }
+        }
+      },
+      {
         "policy_id": "AWS-SG-001",
         "policy_version": "1.0.0",
         "title": "Unrestricted SSH ingress",
@@ -539,6 +1199,248 @@
             "attribute_path": [],
             "explanation": "Prefix-list contents are outside this plan policy and cannot establish restricted ingress.",
             "remediation": "Provide complete, known and non-sensitive ingress observations; review unresolved sources explicitly."
+          }
+        }
+      },
+      {
+        "policy_id": "AWS-TAG-001",
+        "policy_version": "1.0.0",
+        "title": "Mandatory resource tags",
+        "description": "Require known nonblank strings for startup-required tag keys; defaults are Environment, Owner and Project. --required-tag-key overrides the complete default list.",
+        "severity": "medium",
+        "enabled": true,
+        "supported_provider_names": [
+          "registry.terraform.io/hashicorp/aws"
+        ],
+        "supported_resource_types": [
+          "aws_instance",
+          "aws_security_group",
+          "aws_db_instance",
+          "aws_rds_cluster",
+          "aws_s3_bucket"
+        ],
+        "required_paths": [
+          [
+            "tags_all"
+          ],
+          [
+            "tags"
+          ]
+        ],
+        "scope_description": "Five supported resource types; observed desired tags_all is authoritative, with tags fallback only when tags_all is provably absent. Unknown/sensitive observations remain uncertain. Ignored/external tags and live AWS state are not inferred; absence is an observed-plan violation, not proof of absence in AWS.",
+        "required_configuration": [
+          "required_tag_keys"
+        ],
+        "reasons": {
+          "DATA_SOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Data sources are excluded from desired-state governance.",
+            "remediation": "No remediation is required for this check."
+          },
+          "DELETED_RESOURCE_SKIPPED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "Deleted resources have no desired-state encryption check.",
+            "remediation": "No remediation is required for this check."
+          },
+          "RESOURCE_NOT_SUPPORTED": {
+            "outcome": "not_applicable",
+            "attribute_path": [],
+            "explanation": "This resource is outside the selected policy scope.",
+            "remediation": "No remediation is required for this check."
+          },
+          "TAG_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required tag observations are sensitive.",
+            "remediation": "Provide a complete plan with safely reviewable tag observations."
+          },
+          "TAG_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Required tag observations are unknown.",
+            "remediation": "Provide a complete plan with safely reviewable tag observations."
+          },
+          "TAG_UNVERIFIED": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Tag knowledge metadata is incomplete.",
+            "remediation": "Provide a complete plan with safely reviewable tag observations."
+          },
+          "TAG_UNAVAILABLE": {
+            "outcome": "indeterminate",
+            "attribute_path": [],
+            "explanation": "Desired tag data is unavailable.",
+            "remediation": "Provide a complete plan with safely reviewable tag observations."
+          },
+          "TAG_ALL_COMPLIANT": {
+            "outcome": "pass",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "All configured required tags have known nonblank string values.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_ALL_KEY_MISSING": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "A configured required tag is missing.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_ALL_KEY_EMPTY": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "A configured required tag is empty or unset.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_ALL_KEY_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "A configured required tag is sensitive.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_ALL_KEY_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "A configured required tag is unknown.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_ALL_KEY_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "A configured required tag has an invalid value type.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_ALL_MAP_NULL": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "The observed tag map is null and supplies no required values.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_ALL_MAP_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "The selected tag map is sensitive.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_ALL_MAP_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "The selected tag map is unknown.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_ALL_MAP_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags_all"
+            ],
+            "explanation": "The selected tag map has an invalid type.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_COMPLIANT": {
+            "outcome": "pass",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "All configured required tags have known nonblank string values.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_KEY_MISSING": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "A configured required tag is missing.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_RESOURCE_KEY_EMPTY": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "A configured required tag is empty or unset.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_RESOURCE_KEY_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "A configured required tag is sensitive.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_RESOURCE_KEY_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "A configured required tag is unknown.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_RESOURCE_KEY_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "A configured required tag has an invalid value type.",
+            "remediation": "Set a nonblank string value for the required tag identified by the path."
+          },
+          "TAG_RESOURCE_MAP_NULL": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "The observed tag map is null and supplies no required values.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_MAP_SENSITIVE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "The selected tag map is sensitive.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_MAP_UNKNOWN": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "The selected tag map is unknown.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_MAP_INVALID_TYPE": {
+            "outcome": "indeterminate",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "The selected tag map has an invalid type.",
+            "remediation": "Ensure the observed tag map provides known nonblank values for every configured required key."
+          },
+          "TAG_RESOURCE_MAP_MISSING": {
+            "outcome": "fail",
+            "attribute_path": [
+              "tags"
+            ],
+            "explanation": "The observed resource tag map is absent and supplies no required values.",
+            "remediation": "Set nonblank string values for every configured required tag key."
           }
         }
       }

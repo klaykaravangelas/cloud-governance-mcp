@@ -26,7 +26,10 @@ from cloud_governance_mcp.models import (
 )
 from cloud_governance_mcp.normalization import extract_mask_paths, merge_mask_paths
 from cloud_governance_mcp.rds_associations import project_rds_resources
+from cloud_governance_mcp.s3_projection import project_s3_resources
 from cloud_governance_mcp.ssh_projection import project_ssh_resources
+from cloud_governance_mcp.tag_models import DEFAULT_TAG_KEYS
+from cloud_governance_mcp.tag_projection import project_tag_resources
 
 _TEXT = TypeAdapter(IdentityText)
 _POSITIVE_INT = TypeAdapter(PositiveInt)
@@ -92,7 +95,10 @@ class TerraformPlanAdapter:
             raise ConfigurationError() from None
 
     def normalize(
-        self, plan: object, selected_policy_ids: list[str] | None = None
+        self,
+        plan: object,
+        selected_policy_ids: list[str] | None = None,
+        required_tag_keys: tuple[str, ...] = DEFAULT_TAG_KEYS,
     ) -> ResourceSnapshot:
         """Return a sorted safe snapshot, or fixed errors with no rejected values."""
         try:
@@ -101,6 +107,7 @@ class TerraformPlanAdapter:
                 selected_policy_ids
                 if selected_policy_ids is not None
                 else ["AWS-RDS-001"],
+                required_tag_keys,
             )
         except ValidationError as error:
             # Only examine error types. Locations, contexts and inputs can contain
@@ -115,7 +122,10 @@ class TerraformPlanAdapter:
             raise AnalysisError(code) from None
 
     def _normalize(
-        self, plan: dict[str, object], selected_policy_ids: list[str]
+        self,
+        plan: dict[str, object],
+        selected_policy_ids: list[str],
+        required_tag_keys: tuple[str, ...],
     ) -> ResourceSnapshot:
         """Validate the envelope before indexing changes and recursive inventory."""
         version = _text(plan.get("format_version"))
@@ -200,12 +210,26 @@ class TerraformPlanAdapter:
                 ).desired
                 for item in resources
             }
+            if "AWS-S3-001" in selected_policy_ids:
+                project_s3_resources(
+                    resources,
+                    desired,
+                    plan.get("configuration"),
+                    max_depth=self._max_depth,
+                    max_resources=self._max_resources,
+                )
             if "AWS-RDS-001" in selected_policy_ids:
                 project_rds_resources(resources, desired)
             if "AWS-SG-001" in selected_policy_ids:
                 projected = project_ssh_resources(resources, desired)
                 for item in resources:
                     item.ssh_state = projected.get(item.resource.address)
+            if "AWS-TAG-001" in selected_policy_ids:
+                tags = project_tag_resources(
+                    resources, desired, list(required_tag_keys)
+                )
+                for item in resources:
+                    item.tag_state = tags.get(item.resource.address)
         unreported = sum(item.resource.source == "planned_values" for item in resources)
         if unreported:
             warn("CHANGE_ACTIONS_UNREPORTED", unreported)

@@ -1,9 +1,9 @@
 # Roadmap
 
-Status: analysis, evaluation, listing and M1 expanded RDS runtime implemented;
-M1's existing Codex reload smoke test remains pending.
-The user reported successful MCP use; Specification 005 implements M2 SSH coverage.
-Updated: 2026-10-21. Milestones describe scope and completion criteria, not calendar
+Status: all three tools and four initial policy families implemented through M4.
+M5 complete v0.1 acceptance consolidation remains next; live-host reload checks
+remain separate from fresh installed stdio evidence.
+Updated: 2026-10-22. Milestones describe scope and completion criteria, not calendar
 commitments or extra approval gates. Server implementation follows
 architecture/specification review and user direction, then proceeds through small
 verified increments.
@@ -28,6 +28,9 @@ verified increments.
 | M1: expanded RDS coverage (runtime implemented) | Direct `aws_rds_cluster` checks and conservative inheritance for `aws_rds_cluster_instance`; retain standalone behavior and three tools. | Automated Python/Rego/stdio checks pass; existing Codex connection must reload before its final host smoke check. |
 | Fifth specification (implemented) | [Specification 005](specifications/unrestricted-ssh-ingress.md): AWS-SG-001, three Terraform rule formats, masked network projection, two-policy integration, M2a–M2e and SG-01–SG-25. | User approved implementation; [SSH evidence](ssh-acceptance.md) records scope, uncertainty, privacy and two-policy accounting. |
 | M2: SSH ingress (implemented) | World-wide direct SSH exposure, scoped findings, both-policy selection/listing and representative examples. | SG-01–SG-25 have Python/Rego/stdio/package evidence; live Codex SSH reload check remains separately pending. |
+| Sixth specification (implemented) | [Specification 006](specifications/mandatory-resource-tags.md): AWS-TAG-001, default Environment/Owner/Project keys, startup overrides, five taggable types, masked observations and three-policy integration. | User authorized implementation; [TAG evidence](tags-acceptance.md) records source/mask rules, privacy, safe paths, counts and verification. |
+| M3: mandatory tags (implemented) | M3a–M3e implement the reviewed specification through the existing tools, with synthetic examples and real acceptance evidence. | TG-01–TG-22 have local/installed-package evidence; no new OPA capabilities, dependency or cloud access. Live-host reload remains separately pending. |
+| Seventh specification / M4: S3 protection (implemented) | [Specification 007](specifications/s3-public-access-protection.md): four block flags, conservative bucket links, minimal observations and four-policy dispatch. | [S3 evidence](s3-acceptance.md) maps S3-01–S3-20; M5 acceptance consolidation remains next. |
 | v0.1: complete local Terraform MVP | Expand from the first RDS policy to all four policy families; retain the three tools, nested-module/action summaries, structured findings/coverage, examples and local verification commands. | All v0.1 acceptance criteria in `requirements.md` pass, packaged assets work outside the repository, and documented limitations match tested policy coverage. |
 | v0.2: packaging and contributor workflow | Docker packaging, expanded governance policies, GitHub Actions CI/CD, improved documentation/examples. | Container runs read-only with constrained mounted plans; CI executes Python/Rego checks with pinned runtimes. Release publishing remains explicitly controlled. |
 | v0.3: AWS inspection | boto3 adapter, AWS discovery, cross-account support, mocked AWS integration tests. | Read-only AWS snapshots flow through the shared model; mocked tests require no credentials. Permissions and session boundaries are documented before any live testing. |

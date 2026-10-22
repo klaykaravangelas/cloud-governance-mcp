@@ -58,12 +58,12 @@ test_exclusions_and_actions if {
 }
 
 test_defined_empty_report if {
-	result := cloud_governance.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": []}
+	result := cloud_governance.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": []}
 	result == {"schema_version": "1", "checks": []}
 }
 
 test_report_preserves_address_and_catalog_metadata if {
-	result := cloud_governance.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": [base]}
+	result := cloud_governance.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": [base]}
 	result.checks == [{
 		"policy_id": "AWS-RDS-001", "resource_address": base.address,
 		"outcome": "pass", "reason_code": "RDS_ENCRYPTION_ENABLED", "attribute_path": ["storage_encrypted"],

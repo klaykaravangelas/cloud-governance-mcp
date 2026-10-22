@@ -32,7 +32,7 @@ async def evaluate(plan, tmp_path, opa_path, ids=None, engine=None):
             EvaluationSettings(opa_path=str(opa_path)),
             loader=loader,
             engine=engine,
-        ).evaluate("plan.json", ids)
+        ).evaluate("plan.json", IDS if ids is None else ids)
 
 
 @pytest.mark.parametrize("representation", ["inline", "legacy", "modern"])
@@ -265,12 +265,15 @@ async def test_two_policy_mcp_discovery_selection_and_both_output_channels(
                 "list_policies",
             ]
             listing = await client.call_tool("list_policies")
-            assert [
-                p["policy_id"] for p in listing.structured_content["policies"]
-            ] == IDS
+            assert [p["policy_id"] for p in listing.structured_content["policies"]] == [
+                "AWS-RDS-001",
+                "AWS-S3-001",
+                "AWS-SG-001",
+                "AWS-TAG-001",
+            ]
             assert [
                 p["policy_version"] for p in listing.structured_content["policies"]
-            ] == ["1.1.0", "1.0.0"]
+            ] == ["1.1.0", "1.0.0", "1.0.0", "1.0.0"]
             for ids in [None, ["AWS-SG-001"], ["AWS-RDS-001"], list(reversed(IDS))]:
                 args = {"plan_path": "plan.json"}
                 if ids is not None:
@@ -280,7 +283,9 @@ async def test_two_policy_mcp_discovery_selection_and_both_output_channels(
                 report = EvaluationReport.model_validate(result.structured_content)
                 assert json.loads(result.content[0].text) == result.structured_content
                 assert report.selected_policy_ids == sorted(
-                    ids if ids is not None else IDS
+                    ids
+                    if ids is not None
+                    else ["AWS-RDS-001", "AWS-S3-001", "AWS-SG-001", "AWS-TAG-001"]
                 )
                 assert report.compliance_status == (
                     "not_applicable" if ids == ["AWS-RDS-001"] else "fail"
@@ -293,7 +298,7 @@ async def test_two_policy_mcp_discovery_selection_and_both_output_channels(
                 )
                 assert result.is_error and result.structured_content is None
                 assert "SENTINEL" not in result.model_dump_json()
-    assert load_catalog().policies[1].policy_id == "AWS-SG-001"
+    assert load_catalog().select(["AWS-SG-001"])[0].policy_id == "AWS-SG-001"
 
 
 @pytest.mark.parametrize("mode", ["auto", "legacy"])
@@ -328,7 +333,8 @@ async def test_saved_ssh_reports_match_real_stdio_outside_checkout(
         mode=mode,
     ) as client:
         result = await client.call_tool(
-            "evaluate_terraform_policies", {"plan_path": name + ".json"}
+            "evaluate_terraform_policies",
+            {"plan_path": name + ".json", "policy_ids": IDS},
         )
     assert not result.is_error
     assert result.structured_content["compliance_status"] == status

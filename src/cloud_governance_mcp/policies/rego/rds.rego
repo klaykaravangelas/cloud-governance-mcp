@@ -90,7 +90,7 @@ else := direct_reason(r) if {
 
 # Undefined/unsupported input schemas cannot accidentally produce an empty pass.
 report := {"schema_version": "1", "checks": checks} if {
-	input.schema_version == "3"
+	input.schema_version == "5"
 	checks := [check |
 		some policy_id in input.selected_policy_ids
 		some policy in data.cloud_governance_catalog.policies
@@ -102,7 +102,7 @@ report := {"schema_version": "1", "checks": checks} if {
 		check := {
 			"policy_id": policy_id, "resource_address": resource.address,
 			"outcome": template.outcome, "reason_code": code,
-			"attribute_path": template.attribute_path,
+			"attribute_path": policy_path(policy_id, resource, template),
 		}
 	]
 }
@@ -110,4 +110,22 @@ report := {"schema_version": "1", "checks": checks} if {
 # Fixed dispatch; requests cannot inject queries or policy definitions.
 policy_reason(id, r) := reason(r) if id == "AWS-RDS-001"
 
+else := code if {
+	id == "AWS-S3-001"
+	code := data.cloud_governance_s3.reason(r)
+}
+
 else := data.cloud_governance_ssh.reason(r) if id == "AWS-SG-001"
+
+else := code if {
+	id == "AWS-TAG-001"
+	result := data.cloud_governance_tags.decision(r)
+	code := result.code
+}
+
+# Only TAG derives a path from configured key observations; old paths stay fixed.
+policy_path(id, r, template) := path if {
+	id == "AWS-TAG-001"
+	result := data.cloud_governance_tags.decision(r)
+	path := result.path
+} else := template.attribute_path if id != "AWS-TAG-001"

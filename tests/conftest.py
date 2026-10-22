@@ -1,5 +1,6 @@
 """Shared test runtime configuration; analysis-only tests never request OPA."""
 
+import json
 import os
 from copy import deepcopy
 from pathlib import Path
@@ -146,3 +147,53 @@ def ssh_plan():
         }
 
     return build
+
+
+@pytest.fixture
+def tag_plan():
+    """Synthetic complete change; no real identifiers, provider or AWS needed."""
+
+    def make(after=..., *, resource_type="aws_instance", unknown=None, sensitive=None):
+        if after is ...:
+            after = {
+                "tags_all": {"Environment": "dev", "Owner": "team", "Project": "demo"}
+            }
+        return {
+            "format_version": "1.2",
+            "terraform_version": "1.14.0",
+            "complete": True,
+            "planned_values": {"root_module": {}},
+            "resource_changes": [
+                {
+                    "address": f"{resource_type}.example",
+                    "mode": "managed",
+                    "type": resource_type,
+                    "name": "example",
+                    "provider_name": "registry.terraform.io/hashicorp/aws",
+                    "change": {
+                        "actions": ["create"],
+                        "after": deepcopy(after),
+                        "after_unknown": deepcopy(
+                            unknown if unknown is not None else {}
+                        ),
+                        "after_sensitive": deepcopy(
+                            sensitive if sensitive is not None else {}
+                        ),
+                    },
+                }
+            ],
+        }
+
+    return make
+
+
+@pytest.fixture
+def s3_plan():
+    """Fresh two-resource synthetic plan; no Terraform execution or credentials."""
+
+    def make():
+        return json.loads(
+            (Path(__file__).parent / "fixtures/plans/s3_compliant.json").read_text()
+        )
+
+    return make

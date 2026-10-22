@@ -2,7 +2,13 @@
 
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, StringConstraints, ValidationError, model_validator
+from pydantic import (
+    Field,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from cloud_governance_mcp.evaluation_errors import (
     EVALUATION_MESSAGES,
@@ -22,15 +28,26 @@ from cloud_governance_mcp.models import (
     ResourceMode,
 )
 from cloud_governance_mcp.policy_definitions import (
+    AWS_PROVIDER,
     POLICY_IDS,
     RESOURCE_TYPES,
     SSH_TYPES,
+    VERSIONS,
     validate_metadata,
+    validate_severity,
 )
+from cloud_governance_mcp.s3_checks import validate_s3_graph
+from cloud_governance_mcp.s3_models import S3Projection
 from cloud_governance_mcp.ssh_models import (
     MAX_SSH_RULES,
     MAX_SSH_SOURCE_ENTRIES,
     SSHProjection,
+)
+from cloud_governance_mcp.tag_models import (
+    MAX_TAG_KEY_SLOTS,
+    TAG_TYPES,
+    TagConfiguration,
+    TagProjection,
 )
 
 type Outcome = Literal["pass", "fail", "indeterminate", "not_applicable"]
@@ -92,6 +109,107 @@ type ReasonCode = Literal[
     "SSH_RULE_INVALID_TYPE",
     "SSH_RULE_PREFIX_LIST_UNRESOLVED",
     "SSH_EGRESS_SKIPPED",
+    "TAG_SENSITIVE",
+    "TAG_UNKNOWN",
+    "TAG_UNVERIFIED",
+    "TAG_UNAVAILABLE",
+    "TAG_ALL_COMPLIANT",
+    "TAG_ALL_KEY_MISSING",
+    "TAG_ALL_KEY_EMPTY",
+    "TAG_ALL_KEY_SENSITIVE",
+    "TAG_ALL_KEY_UNKNOWN",
+    "TAG_ALL_KEY_INVALID_TYPE",
+    "TAG_ALL_MAP_NULL",
+    "TAG_ALL_MAP_SENSITIVE",
+    "TAG_ALL_MAP_UNKNOWN",
+    "TAG_ALL_MAP_INVALID_TYPE",
+    "TAG_RESOURCE_COMPLIANT",
+    "TAG_RESOURCE_KEY_MISSING",
+    "TAG_RESOURCE_KEY_EMPTY",
+    "TAG_RESOURCE_KEY_SENSITIVE",
+    "TAG_RESOURCE_KEY_UNKNOWN",
+    "TAG_RESOURCE_KEY_INVALID_TYPE",
+    "TAG_RESOURCE_MAP_NULL",
+    "TAG_RESOURCE_MAP_SENSITIVE",
+    "TAG_RESOURCE_MAP_UNKNOWN",
+    "TAG_RESOURCE_MAP_INVALID_TYPE",
+    "TAG_RESOURCE_MAP_MISSING",
+    "S3_BLOCK_ENABLED",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_SENSITIVE",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNKNOWN",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNVERIFIED",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_UNAVAILABLE",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_MISSING",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_NULL",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_INVALID_TYPE",
+    "S3_BLOCK_BLOCK_PUBLIC_ACLS_DISABLED",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_SENSITIVE",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNKNOWN",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNVERIFIED",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_UNAVAILABLE",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_MISSING",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_NULL",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_INVALID_TYPE",
+    "S3_BLOCK_IGNORE_PUBLIC_ACLS_DISABLED",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_SENSITIVE",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNKNOWN",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNVERIFIED",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_UNAVAILABLE",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_MISSING",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_NULL",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_INVALID_TYPE",
+    "S3_BLOCK_BLOCK_PUBLIC_POLICY_DISABLED",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_SENSITIVE",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNKNOWN",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNVERIFIED",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_UNAVAILABLE",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_MISSING",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_NULL",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_INVALID_TYPE",
+    "S3_BLOCK_RESTRICT_PUBLIC_BUCKETS_DISABLED",
+    "S3_BUCKET_ENABLED",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_SENSITIVE",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNKNOWN",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNVERIFIED",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_UNAVAILABLE",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_MISSING",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_NULL",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_INVALID_TYPE",
+    "S3_BUCKET_BLOCK_PUBLIC_ACLS_DISABLED",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_SENSITIVE",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNKNOWN",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNVERIFIED",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_UNAVAILABLE",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_MISSING",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_NULL",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_INVALID_TYPE",
+    "S3_BUCKET_IGNORE_PUBLIC_ACLS_DISABLED",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_SENSITIVE",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNKNOWN",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNVERIFIED",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_UNAVAILABLE",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_MISSING",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_NULL",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_INVALID_TYPE",
+    "S3_BUCKET_BLOCK_PUBLIC_POLICY_DISABLED",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_SENSITIVE",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNKNOWN",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNVERIFIED",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_UNAVAILABLE",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_MISSING",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_NULL",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_INVALID_TYPE",
+    "S3_BUCKET_RESTRICT_PUBLIC_BUCKETS_DISABLED",
+    "S3_LINK_SENSITIVE",
+    "S3_LINK_UNKNOWN",
+    "S3_LINK_UNVERIFIED",
+    "S3_LINK_UNAVAILABLE",
+    "S3_LINK_MISSING",
+    "S3_LINK_NULL",
+    "S3_LINK_INVALID_TYPE",
+    "S3_LINK_NOT_FOUND",
+    "S3_LINK_AMBIGUOUS",
+    "S3_LINK_CONTEXT_UNVERIFIED",
 ]
 
 
@@ -100,7 +218,7 @@ class EvaluateTerraformPoliciesInput(ContractModel):
 
     plan_path: PlanPath = Field(repr=False)
     policy_ids: list[PolicyID] = Field(
-        default_factory=lambda: list(POLICY_IDS), min_length=1, max_length=2
+        default_factory=lambda: list(POLICY_IDS), min_length=1, max_length=4
     )
 
     @model_validator(mode="after")
@@ -138,17 +256,17 @@ class ReasonTemplate(ContractModel):
 class PolicyMetadata(ContractModel):
     """One implemented policy's metadata; the catalog does not advertise plans."""
 
-    policy_id: Literal["AWS-RDS-001", "AWS-SG-001"]
+    policy_id: Literal["AWS-RDS-001", "AWS-S3-001", "AWS-SG-001", "AWS-TAG-001"]
     policy_version: Literal["1.1.0", "1.0.0"]
     title: IdentityText
     description: IdentityText
-    severity: Literal["high"]
+    severity: Literal["high", "medium"]
     enabled: Literal[True]
     supported_provider_names: list[IdentityText] = Field(min_length=1, max_length=1)
-    supported_resource_types: list[IdentityText] = Field(min_length=3, max_length=3)
+    supported_resource_types: list[IdentityText] = Field(min_length=2, max_length=5)
     required_paths: list[AttributePath]
     scope_description: IdentityText
-    required_configuration: list[IdentityText] = Field(max_length=0)
+    required_configuration: list[IdentityText] = Field(max_length=1)
     reasons: dict[ReasonCode, ReasonTemplate]
 
     @model_validator(mode="after")
@@ -161,6 +279,7 @@ class PolicyMetadata(ContractModel):
             self.supported_resource_types,
             self.required_paths,
             self.required_configuration,
+            self.severity,
         )
         return self
 
@@ -170,10 +289,22 @@ class PolicyScope(ContractModel):
 
     policy_id: PolicyID
     policy_version: IdentityText
-    severity: Literal["high"]
+    severity: Literal["high", "medium"]
     supported_provider_names: list[IdentityText]
     supported_resource_types: list[IdentityText]
     scope_description: IdentityText
+
+    @model_validator(mode="after")
+    def policy_scope(self) -> Self:
+        """Public scope remains exact per ID, including its severity and types."""
+        validate_severity(self.policy_id, self.severity)
+        if (
+            self.policy_version != VERSIONS[self.policy_id]
+            or self.supported_provider_names != [AWS_PROVIDER]
+            or self.supported_resource_types != list(RESOURCE_TYPES[self.policy_id])
+        ):
+            raise ValueError("Invalid policy scope.")
+        return self
 
 
 class ProjectedResource(ContractModel):
@@ -186,14 +317,34 @@ class ProjectedResource(ContractModel):
     action_category: ActionCategory
     desired_state: DesiredStateProjection = Field(repr=False)
     ssh_state: SSHProjection | None = Field(default=None, repr=False)
+    tag_state: TagProjection | None = Field(default=None, repr=False)
+    s3_state: S3Projection | None = Field(default=None, repr=False)
 
 
 class EvaluationInput(ContractModel):
     """Versioned, deterministic engine input; no raw Terraform envelope."""
 
-    schema_version: Literal["3"] = "3"
+    schema_version: Literal["5"] = "5"
     selected_policy_ids: list[PolicyID]
+    tag_configuration: TagConfiguration | None = Field(default=None, repr=False)
     resources: list[ProjectedResource] = Field(repr=False)
+
+    @field_validator("tag_configuration", mode="before")
+    @classmethod
+    def canonical_tag_input(cls, value: object) -> object:
+        """Engine inputs must already be canonical; operator settings may sort."""
+        keys = (
+            value.get("required_tag_keys")
+            if isinstance(value, dict)
+            else getattr(value, "required_tag_keys", None)
+        )
+        if (
+            isinstance(keys, list)
+            and all(type(k) is str for k in keys)
+            and keys != sorted(keys)
+        ):
+            raise ValueError("Unordered engine tag configuration.")
+        return value
 
     @model_validator(mode="after")
     def valid_resource_graph(self) -> Self:
@@ -208,9 +359,15 @@ class EvaluationInput(ContractModel):
             or any(p not in POLICY_IDS for p in self.selected_policy_ids)
         ):
             raise ValueError("Invalid engine selection.")
+        tag_selected = "AWS-TAG-001" in self.selected_policy_ids
+        if tag_selected != (self.tag_configuration is not None):
+            raise ValueError("Invalid tag configuration scope.")
+        keys = self.tag_configuration.required_tag_keys if tag_selected else []
+        tag_slots = 0
         by_address = {item.address: item for item in self.resources}
         if len(by_address) != len(self.resources):
             raise ValueError("Duplicate resource address.")
+        validate_s3_graph(self.resources, self.selected_policy_ids)
         rule_slots, cidr_slots = 0, 0
         for item in self.resources:
             eligible = (
@@ -218,6 +375,18 @@ class EvaluationInput(ContractModel):
                 and item.action_category != "delete"
                 and item.provider_name == "registry.terraform.io/hashicorp/aws"
             )
+            tag_eligible = eligible and item.resource_type in TAG_TYPES and tag_selected
+            if tag_eligible:
+                tag_slots += len(keys)
+                if tag_slots > MAX_TAG_KEY_SLOTS or item.tag_state is None:
+                    raise ValueError("Invalid tag work or projection.")
+                if (
+                    item.tag_state.state == "known"
+                    and [e.key for e in item.tag_state.entries] != keys
+                ):
+                    raise ValueError("Invalid configured tag entries.")
+            elif item.tag_state is not None:
+                raise ValueError("Unexpected tag projection.")
             scope = item.desired_state.scope
             expected_scope = {
                 "aws_rds_cluster": "cluster",
@@ -300,13 +469,21 @@ class Finding(ContractModel):
     """Safe identity and catalog prose; no value/evidence dictionary is allowed."""
 
     policy_id: PolicyID
-    severity: Literal["high"]
+    severity: Literal["high", "medium"]
     resource_address: IdentityText = Field(repr=False)
     resource_type: IdentityText = Field(repr=False)
     reason_code: ReasonCode
     attribute_path: AttributePath
     explanation: IdentityText
     remediation: IdentityText
+
+    @model_validator(mode="after")
+    def policy_severity(self) -> Self:
+        """Do not accept another policy's otherwise valid severity on findings."""
+        validate_severity(self.policy_id, self.severity)
+        if self.resource_type not in RESOURCE_TYPES[self.policy_id]:
+            raise ValueError("Invalid finding resource type.")
+        return self
 
 
 class EvaluationError(ContractModel):

@@ -1,0 +1,51 @@
+{
+  "format_version": "1.2",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket.example",
+      "type": "aws_s3_bucket",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-governance-bucket",
+          "tags_all": {
+            "Environment": "dev",
+            "Owner": "platform",
+            "Project": "governance"
+          }
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {}
+  },
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.example",
+          "type": "aws_s3_bucket",
+          "name": "example",
+          "mode": "managed",
+          "provider_config_key": "aws"
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.protection",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "protection",
+          "mode": "managed",
+          "provider_config_key": "aws"
+        }
+      ]
+    }
+  }
+}

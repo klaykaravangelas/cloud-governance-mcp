@@ -27,3 +27,37 @@ identities. It is independent of these fixtures; tests do not run Terraform.
 Separate `examples/terraform/ssh/inline`, `legacy` and `modern` directories
 illustrate each rule format without combining competing security-group management
 styles. They are not run and do not generate these synthetic JSON fixtures.
+
+
+Mandatory-tag fixtures use fake values and default required keys unless noted:
+
+| File | Purpose |
+| --- | --- |
+| `tags_compliant.json` | All three required tags are known nonblank strings. |
+| `tags_missing_owner.json` | Owner is known absent; one TAG failure names its safe field path. |
+| `tags_empty_project.json` | Project is whitespace-only; one empty-tag failure. |
+| `tags_unknown_owner.json` | Owner has a raw sentinel with an unknown mask; it remains indeterminate and never reaches OPA/output as a value. |
+| `tags_provider_defaults.json` | Complete tags_all includes defaults absent from resource-only tags; no HCL merge is performed. |
+| `tags_custom_keys.json` | CostCenter-only observed map; passes with the CostCenter-only startup override and fails the default requirements. |
+| `mixed_rds_ssh_tags.json` | A new mixed fixture, leaving the old one unchanged; all three resources have complete required tags, producing nine checks with explicit RDS/SSH/TAG selection. |
+
+`examples/terraform/tags/main.tf` separately illustrates provider-default and
+resource tags. Neither it nor the other HCL examples is executed by tests.
+
+## S3 public-access protection (Specification 007)
+
+These are hand-authored synthetic plans with fake names and minimal configuration
+metadata; they were not exported from Terraform. No test runs HCL or uses AWS.
+
+| File | S3-only behavior |
+| --- | --- |
+| `s3_compliant.json` | Unique bucket/block with shared provider metadata; two passes. |
+| `s3_disabled_flag.json` | Known false block_public_policy; direct and inherited failures. |
+| `s3_unknown_flag.json` | Unknown restrict_public_buckets; two uncertain checks. |
+| `s3_missing_block.json` | Missing matching block; indeterminate rather than inferred public access. |
+| `s3_computed_link.json` | Dependency reference with unknown name; direct block passes, bucket unresolved. |
+| `s3_ambiguous_link.json` | Two known blocks conceal a unique association; bucket unresolved. |
+| `mixed_all_policies.json` | Four resources; default four-policy evaluation yields 16 checks, 6 passes, 1 SSH failure and 9 N/A. |
+
+Saved reports were captured through real MCP stdio. The separate illustrative HCL
+is `examples/terraform/s3/main.tf`; it is not a generator for these fixtures.

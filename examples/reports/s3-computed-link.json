@@ -1,0 +1,57 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": null,
+  "evaluation_status": "complete",
+  "compliance_status": "indeterminate",
+  "selected_policy_ids": [
+    "AWS-S3-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-S3-001",
+      "policy_version": "1.0.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_s3_bucket",
+        "aws_s3_bucket_public_access_block"
+      ],
+      "scope_description": "Checks bucket-level protection settings in the supplied plan. Bucket inheritance requires unique known names and shared provider configuration metadata. Unresolved links are indeterminate. Does not establish effective public reachability or inspect live, account-level, policy or ACL settings."
+    }
+  ],
+  "findings": [],
+  "indeterminate_checks": [
+    {
+      "policy_id": "AWS-S3-001",
+      "severity": "high",
+      "resource_address": "aws_s3_bucket.example",
+      "resource_type": "aws_s3_bucket",
+      "reason_code": "S3_LINK_CONTEXT_UNVERIFIED",
+      "attribute_path": [
+        "bucket"
+      ],
+      "explanation": "The bucket protection association is unresolved: context_unverified.",
+      "remediation": "Include uniquely matching known bucket names and shared provider configuration metadata in the plan."
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 2,
+    "candidate_resources": 2,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 2,
+    "evaluated_checks": 2,
+    "unevaluated_checks": 0,
+    "applicable_checks": 2,
+    "passed": 1,
+    "failed": 0,
+    "indeterminate": 1,
+    "not_applicable": 0
+  }
+}

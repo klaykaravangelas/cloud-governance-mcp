@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "evaluation_status": "complete",
+  "compliance_status": "indeterminate",
+  "selected_policy_ids": [
+    "AWS-TAG-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-TAG-001",
+      "policy_version": "1.0.0",
+      "severity": "medium",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_instance",
+        "aws_security_group",
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_s3_bucket"
+      ],
+      "scope_description": "Five supported resource types; observed desired tags_all is authoritative, with tags fallback only when tags_all is provably absent. Unknown/sensitive observations remain uncertain. Ignored/external tags and live AWS state are not inferred; absence is an observed-plan violation, not proof of absence in AWS."
+    }
+  ],
+  "findings": [],
+  "indeterminate_checks": [
+    {
+      "policy_id": "AWS-TAG-001",
+      "severity": "medium",
+      "resource_address": "aws_instance.example",
+      "resource_type": "aws_instance",
+      "reason_code": "TAG_ALL_KEY_UNKNOWN",
+      "attribute_path": [
+        "tags_all",
+        "Owner"
+      ],
+      "explanation": "A configured required tag is unknown.",
+      "remediation": "Set a nonblank string value for the required tag identified by the path."
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 1,
+    "candidate_resources": 1,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 1,
+    "evaluated_checks": 1,
+    "unevaluated_checks": 0,
+    "applicable_checks": 1,
+    "passed": 0,
+    "failed": 0,
+    "indeterminate": 1,
+    "not_applicable": 0
+  }
+}

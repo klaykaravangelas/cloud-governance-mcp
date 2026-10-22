@@ -25,7 +25,7 @@ else := "fail"
 test_direct_cluster_and_inherited_known_values if {
 	every enabled in [true, false] {
 		target := object.union(cluster, {"desired_state": {"scope": "cluster", "encryption": {"state": "known", "value": enabled}}})
-		results := policy.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": [target, member]}
+		results := policy.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": [target, member]}
 		results.checks[0].outcome == known_outcome(enabled)
 		results.checks[1].outcome == known_outcome(enabled)
 		not results.checks[2]
@@ -38,7 +38,7 @@ test_direct_cluster_and_inherited_known_values if {
 test_all_target_uncertainty_states if {
 	every state in ["sensitive", "unknown", "unverified", "unavailable", "missing", "null", "invalid_type"] {
 		target := object.union(cluster, {"desired_state": {"scope": "cluster", "encryption": {"state": state}}})
-		results := policy.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": [target, member]}
+		results := policy.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": [target, member]}
 		results.checks[0].outcome == "indeterminate"
 		results.checks[1].outcome == "indeterminate"
 		not results.checks[2]
@@ -49,7 +49,7 @@ test_all_target_uncertainty_states if {
 test_all_unresolved_member_states if {
 	every state in ["sensitive", "unknown", "unverified", "unavailable", "missing", "null", "invalid_type", "context_unverified", "not_found", "ambiguous"] {
 		r := object.union(member, {"desired_state": {"scope": "cluster_member", "association": {"state": state}, "encryption": {"state": "known", "value": true}}})
-		result := policy.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": [r]}
+		result := policy.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": [r]}
 		not result.checks[1]
 		result.checks[0].outcome == "indeterminate"
 		result.checks[0].attribute_path == ["cluster_identifier"]
@@ -66,7 +66,7 @@ test_schema_mismatch_is_undefined if {
 }
 
 test_missing_target_does_not_manufacture_a_check if {
-	result := policy.report with input as {"schema_version": "3", "selected_policy_ids": ["AWS-RDS-001"], "resources": [member]}
+	result := policy.report with input as {"schema_version": "5", "selected_policy_ids": ["AWS-RDS-001"], "resources": [member]}
 
 	# The Python input validator rejects this graph; exhaustive result validation
 	# additionally prevents trusting a batch where this lookup dropped the member.

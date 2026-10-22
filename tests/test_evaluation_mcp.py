@@ -77,7 +77,12 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             selected = [
                 policy["policy_id"] for policy in listed.structured_content["policies"]
             ]
-            assert selected == ["AWS-RDS-001", "AWS-SG-001"]
+            assert selected == [
+                "AWS-RDS-001",
+                "AWS-S3-001",
+                "AWS-SG-001",
+                "AWS-TAG-001",
+            ]
             for filename, status in [
                 ("encrypted_rds.json", "pass"),
                 ("unencrypted_rds.json", "fail"),
@@ -86,7 +91,7 @@ async def test_both_tools_real_policy_results_and_safe_failures(
             ]:
                 result = await client.call_tool(
                     "evaluate_terraform_policies",
-                    {"plan_path": filename, "policy_ids": selected},
+                    {"plan_path": filename, "policy_ids": ["AWS-RDS-001"]},
                 )
                 assert not result.is_error
                 report = EvaluationReport.model_validate(result.structured_content)

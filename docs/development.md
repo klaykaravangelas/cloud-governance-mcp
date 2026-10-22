@@ -1,8 +1,8 @@
 # Development setup and verification
 
-Current stage: Specifications 001–005 provide analysis, evaluation, listing,
-expanded RDS and SSH ingress coverage. See [current SSH evidence](ssh-acceptance.md),
-the [SSH walkthrough](trying-ssh.md) and [M1 evidence](rds-acceptance.md).
+Current stage: Specifications 001–006 provide analysis, evaluation, listing,
+expanded RDS, SSH ingress and mandatory tags. See [current TAG evidence](tags-acceptance.md),
+the [tags walkthrough](trying-tags.md) and [SSH evidence](ssh-acceptance.md).
 Earlier sections below preserve historical checkpoint counts.
 See [evaluation evidence](evaluation-acceptance.md), [OPA setup](opa-setup.md) and
 [the evaluation walkthrough](trying-evaluation.md). The A1–A7 notes below record
@@ -590,3 +590,62 @@ test Rego and the OPA binary stayed out of the wheel. Details and SG-01–SG-25
 traceability are in [SSH acceptance](ssh-acceptance.md). Follow the
 [SSH walkthrough](trying-ssh.md) for manual calls. Live Codex SSH reload testing
 and Linux execution remain separately unverified.
+
+
+## Mandatory tags and three-policy evaluation (M3)
+
+Approved Specification 006 adds medium-severity AWS-TAG-001 v1.0.0 with startup
+required-tag defaults Environment/Owner/Project, override flags and five exact
+resource types. Tag observations retain configured keys and states only. Rego
+owns aggregation; the engine validates configured-key paths before reporting.
+Service/engine snapshots prevent runtime configuration drift. Engine input is
+schema 4; public/engine-output/catalog envelopes remain schema 1. The existing
+OPA capabilities, Python dependencies, transport, three tools and byte/time
+budgets are unchanged. There is a fixed 50,000 required-key-slot work ceiling.
+
+Verified 2026-10-22 on macOS arm64 with Python 3.14.7, MCP 2.3.0 and OPA 1.21.2:
+**1,184 Python tests, no skips**, **37 real Rego tests**, Ruff lint/format,
+strict Rego/format and uv lock/environment/dependency checks passed. The documented
+OPA-free selection passed **966 tests** with an invalid OPA path; full verification
+still requires the pinned real OPA. Host permissions allowed the real Unix socket
+fixture. No AWS credentials or Terraform execution was needed.
+
+Follow the [TAG walkthrough](trying-tags.md) for exact default/override commands
+and four host prompts. [TAG acceptance](tags-acceptance.md) records TG-01–TG-22,
+distribution checks and the observed stale existing Codex connection separately
+from fresh stdio evidence. Existing reports use explicit old-policy selections;
+omitted selection intentionally includes TAG now. No live new-version host reload
+or Linux/generated-plan campaign is claimed.
+
+Source/wheel builds and fresh independent wheel/source installations outside the
+checkout passed isolated SDK auto/legacy checks, console/module startup, all 15
+evaluation report goldens, analysis/listing, custom keys and containment. Wheel
+production assets matched source byte-for-byte; test Rego and the OPA binary were
+excluded. Initial fresh-environment dependency cache setup required downloads of
+existing locked packages; the installed verification itself was local.
+
+## S3 protection and four-policy evaluation (M4)
+
+Specification 007 adds high-severity AWS-S3-001 v1.0.0. Four strictly observed
+flags drive direct block checks; buckets inherit only through unique known names
+and shared opaque provider configuration metadata. A bounded tree lookup preserves
+module uncertainty. Raw names/provider keys are transient. Engine input advances
+to schema 5; public/engine-output/catalog/listing schemas stay 1. No dependency,
+capability, CLI setting or runtime process-control change is required.
+
+Verified 2026-10-22 on macOS arm64: **1,371 Python tests, no skips**, **46 real
+Rego tests**, Ruff lint/format, strict Rego/format and lock/environment/dependency
+checks passed. The OPA-free subset passed **1,077 tests** with an invalid OPA
+path and the documented eight evaluation-module exclusions. Host permissions
+allowed the required real Unix socket test. Actual OPA remains mandatory for
+full verification; no AWS credentials or Terraform execution were needed.
+
+Fresh source/wheel installations outside the checkout passed isolated SDK
+auto/legacy stdio checks, both entrypoints, all three tools, four-policy listing,
+22 evaluation goldens, custom tag keys and containment. Production package bytes
+matched the checkout; four production Rego files were included, while test assets
+and the OPA binary were excluded. Builds and fresh dependency installation used
+cached locked packages offline. See [S3 acceptance](s3-acceptance.md) for
+S3-01–S3-20 traceability and [the walkthrough](trying-s3.md) for manual calls.
+Long-lived host reload and Linux/generated-plan compatibility remain separately
+unverified. M5 complete-v0.1 acceptance consolidation is the next milestone.

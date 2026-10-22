@@ -1,0 +1,104 @@
+{
+  "schema_version": "1",
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "evaluation_status": "complete",
+  "compliance_status": "fail",
+  "selected_policy_ids": [
+    "AWS-RDS-001",
+    "AWS-S3-001",
+    "AWS-SG-001",
+    "AWS-TAG-001"
+  ],
+  "policy_scope": [
+    {
+      "policy_id": "AWS-RDS-001",
+      "policy_version": "1.1.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_rds_cluster_instance"
+      ],
+      "scope_description": "Standalone RDS instances and RDS clusters; Aurora members inherit only from a unique same-plan cluster with known matching identifier and AWS ARN context. Unresolved associations are indeterminate; service defaults and live state are not inferred."
+    },
+    {
+      "policy_id": "AWS-S3-001",
+      "policy_version": "1.0.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_s3_bucket",
+        "aws_s3_bucket_public_access_block"
+      ],
+      "scope_description": "Checks bucket-level protection settings in the supplied plan. Bucket inheritance requires unique known names and shared provider configuration metadata. Unresolved links are indeterminate. Does not establish effective public reachability or inspect live, account-level, policy or ACL settings."
+    },
+    {
+      "policy_id": "AWS-SG-001",
+      "policy_version": "1.0.0",
+      "severity": "high",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_security_group",
+        "aws_security_group_rule",
+        "aws_vpc_security_group_ingress_rule"
+      ],
+      "scope_description": "Observed inline ingress and standalone ingress rules only. Prefix-list contents remain unresolved; live reachability and unions of narrower CIDRs are not analyzed."
+    },
+    {
+      "policy_id": "AWS-TAG-001",
+      "policy_version": "1.0.0",
+      "severity": "medium",
+      "supported_provider_names": [
+        "registry.terraform.io/hashicorp/aws"
+      ],
+      "supported_resource_types": [
+        "aws_instance",
+        "aws_security_group",
+        "aws_db_instance",
+        "aws_rds_cluster",
+        "aws_s3_bucket"
+      ],
+      "scope_description": "Five supported resource types; observed desired tags_all is authoritative, with tags fallback only when tags_all is provably absent. Unknown/sensitive observations remain uncertain. Ignored/external tags and live AWS state are not inferred; absence is an observed-plan violation, not proof of absence in AWS."
+    }
+  ],
+  "findings": [
+    {
+      "policy_id": "AWS-SG-001",
+      "severity": "high",
+      "resource_address": "aws_security_group.example",
+      "resource_type": "aws_security_group",
+      "reason_code": "SSH_INLINE_UNRESTRICTED_INGRESS",
+      "attribute_path": [
+        "ingress"
+      ],
+      "explanation": "An observed ingress permission allows unrestricted direct SSH.",
+      "remediation": "Restrict the source of SSH access or remove the ingress permission."
+    }
+  ],
+  "indeterminate_checks": [],
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "resources_observed": 4,
+    "candidate_resources": 4,
+    "skipped_data": 0,
+    "skipped_deleted": 0,
+    "unsupported_resources": 0,
+    "expected_checks": 16,
+    "evaluated_checks": 16,
+    "unevaluated_checks": 0,
+    "applicable_checks": 7,
+    "passed": 6,
+    "failed": 1,
+    "indeterminate": 0,
+    "not_applicable": 9
+  }
+}

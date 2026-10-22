@@ -9,14 +9,19 @@ from cloud_governance_mcp.evaluation_errors import EvaluationCode, EvaluationFai
 from cloud_governance_mcp.evaluation_models import PolicyMetadata, ReasonCode
 from cloud_governance_mcp.json_codec import decode_object
 from cloud_governance_mcp.models import ContractModel
-from cloud_governance_mcp.policy_definitions import COMMON_REASONS, POLICY_IDS
+from cloud_governance_mcp.policy_definitions import (
+    COMMON_REASONS,
+    POLICY_IDS,
+    S3_REASON_SPECS,
+    TAG_REASON_SPECS,
+)
 
 
 class PolicyCatalog(ContractModel):
     """Validate scope and completeness, not just syntactically valid JSON."""
 
     schema_version: Literal["1"]
-    policies: list[PolicyMetadata] = Field(min_length=2, max_length=2)
+    policies: list[PolicyMetadata] = Field(min_length=4, max_length=4)
 
     @model_validator(mode="after")
     def implemented_scope(self) -> Self:
@@ -31,7 +36,11 @@ class PolicyCatalog(ContractModel):
                 if (
                     code.startswith("SSH_")
                     if policy.policy_id == "AWS-SG-001"
-                    else not code.startswith("SSH_")
+                    else code.startswith("TAG_")
+                    if policy.policy_id == "AWS-TAG-001"
+                    else code.startswith("S3_")
+                    if policy.policy_id == "AWS-S3-001"
+                    else not code.startswith(("SSH_", "TAG_", "S3_"))
                 )
             }
             expected |= COMMON_REASONS
@@ -60,6 +69,10 @@ class PolicyCatalog(ContractModel):
                     if code.startswith("RDS_ENCRYPTION_")
                     else []
                 )
+                if code in S3_REASON_SPECS:
+                    outcome, path = S3_REASON_SPECS[code]
+                if code in TAG_REASON_SPECS:
+                    outcome, path = TAG_REASON_SPECS[code]
                 if reason.outcome != outcome or reason.attribute_path != path:
                     raise ValueError("Invalid reason semantics.")
         return self

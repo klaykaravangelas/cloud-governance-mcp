@@ -5,7 +5,45 @@ Detailed implementation contracts and compatibility decisions live here so
 specification before changing these boundaries; the specification defines the
 accepted behavior. Historical task labels below identify where decisions arose.
 
-## Current SSH and multi-policy contracts
+## Current S3 and four-policy contracts
+
+Specification 007 advances engine input to schema 5. Public/engine output,
+catalog and listing envelopes stay schema 1. s3_models.py contains exact four-flag
+observations and safe links; s3_projection.py uses masked desired values and
+bounded configuration metadata for a linear transient association index.
+Only known unique names with shared provider_config_key can resolve. Unknown-name
+blockers, aliases without shared context, absent membership and computed references
+stay indeterminate. No raw name or provider key crosses the OPA boundary.
+Rego owns false-first/all-true/uncertain aggregation. s3_checks.py validates target
+scope and reason provenance; catalog paths stay fixed. The fourth default policy
+adds no settings, dependency, capability or runtime process boundary. Configuration
+work is bounded by existing depth/resource limits and 2,048-character contexts.
+See [S3 specification](specifications/s3-public-access-protection.md).
+
+## Tag and three-policy checkpoint (M3)
+
+Specification 006 advances engine input to schema 4; public/engine output and
+catalog envelopes remain schema 1. TagConfiguration requires explicit bounded
+keys in engine graphs, while EvaluationSettings supplies default
+Environment/Owner/Project keys. The service and OPA engine snapshot operator keys;
+internally consistent injected graphs cannot silently choose other requirements.
+
+Tag projection selects masked tags_all before provably absent-map tags fallback.
+Only configured keys and content/uncertainty states survive; values and unrequired
+names do not reach OPA. Sensitivity crosses duplicate map copies. Rego aggregates
+one check per resource/policy and owns key selection. TAG key paths may extend a
+fixed catalog map prefix by one configured key only; tag_checks.py guards source,
+state and membership, and reporting preserves the validated path. RDS/SSH paths
+stay exact. Strict per-ID guards cover medium TAG severity and its five types.
+
+The fixed 50,000-key-slot ceiling counts each eligible resource's configured key
+count before projection, including withheld maps, and is revalidated on engine
+input. Unselected TAG data/limits are never inspected. Capabilities, dependencies,
+byte/time defaults and MCP arguments remain unchanged. See
+[Specification 006](specifications/mandatory-resource-tags.md) and
+[TAG evidence](tags-acceptance.md).
+
+## SSH and two-policy checkpoint (M2)
 
 Specification 005 advances engine input to schema 3; engine output, catalog and
 public reports remain schema 1. `contracts.py` supplies the strict shared model

@@ -5,7 +5,7 @@ Specification 002 implements the first evaluation policy. Specification 003
 implements catalog-only policy listing. Specification 004 implements expanded
 RDS coverage; see [acceptance evidence](rds-acceptance.md) for user-reported and
 observer-specific host observations. Specification 005 implements SSH/two-policy support.
-Updated: 2026-10-21.
+Updated: 2026-10-22.
 
 ## Repository inspection
 
@@ -90,6 +90,30 @@ port comparisons; network/runtime capabilities remain denied. SSH rules/source
 entries receive fixed work ceilings in addition to current byte/runtime budgets.
 See [SSH acceptance evidence](ssh-acceptance.md) for executed checks and limitations.
 
+[Specification 006](specifications/mandatory-resource-tags.md) implements
+separate pure tag contracts/projection for five resource types. Operator startup
+keys default to Environment/Owner/Project. A masked authoritative tags_all map
+or provably absent-map fallback to tags becomes per-key states; raw values and
+unrequired keys never reach OPA. Rego aggregates one TAG check per resource.
+At M3, input schema 4 and strict per-ID metadata added the third policy
+and medium severity. TAG key findings may append exactly one configured key to
+a catalog-controlled map path, with engine validation before reporting. Existing
+RDS/SSH fixed paths stay exact. A fixed 50,000 required-key-slot ceiling preserves
+bounded work. Startup `--required-tag-key` overrides the defaults. The service and engine each
+snapshot validated keys, so requests/injected graphs cannot override operator
+configuration. See [TAG acceptance](tags-acceptance.md) for verification.
+
+[Specification 007](specifications/s3-public-access-protection.md) adds S3 contracts,
+projection and provenance guards. Four ordered strict boolean observations represent
+block flags; buckets retain only a proved block address or uncertainty state.
+Transient name indexes require globally unique known matches and a shared opaque
+provider_config_key from bounded configuration-tree metadata. Missing module
+membership never implies root: root joins require an exact configuration identity.
+Computed dependency references and indexed module contexts cannot prove inheritance.
+Engine input is now schema 5, with four default policies and unchanged public
+schema 1, tools, dependencies, capabilities and process controls. See
+[S3 acceptance](s3-acceptance.md).
+
 | Increment | User-visible tool | Components introduced |
 | --- | --- | --- |
 | Analysis | `analyze_terraform_plan` | Package/stdio entrypoint, settings, restricted loader, generic Terraform parser, normalized identities/actions/masks, and analysis summaries. |
@@ -120,6 +144,12 @@ src/cloud_governance_mcp/
   ssh_models.py           # strict value-free network observations
   ssh_projection.py       # masked bounded protocol/port/source parsing
   policy_definitions.py   # fixed IDs/scopes and per-ID metadata validation
+  tag_models.py           # strict required keys and value-free tag variants
+  tag_projection.py       # masked authoritative tag-source observations
+  tag_checks.py           # configured-key path/state validation
+  s3_models.py            # four boolean observations and safe association states
+  s3_projection.py        # masked flags and bounded transient name/context indexes
+  s3_checks.py            # graph and output provenance validation
   catalog.py              # lazy package-only metadata loading
   files.py                # contained, bounded JSON reads
   normalization.py        # sensitive/unknown path handling shared by adapters
@@ -159,6 +189,7 @@ implemented. Listing exposes a public metadata projection of the shared catalog.
 | Terraform adapter | `TerraformPlanAdapter.normalize(plan: object) -> ResourceSnapshot` | Implemented in A4: validate consumed plan structures, recursively merge identities/actions by exact address, extract typed masks and fixed warnings. Discard attribute values; a redacted desired-value projection belongs to evaluation. |
 | RDS associations | Pure bounded resolver called during selected-policy evaluation normalization | Specification 004: build masked temporary lookup keys, prove unique same-plan cluster links and discard raw matching data before returning the snapshot. No compliance decisions or AWS inspection. |
 | SSH projection | Pure bounded parser called only when SSH is selected | Specification 005: strict protocol/port/CIDR syntax, conservative collection masks, minimal numeric observations and reference presence; Rego makes exposure decisions. |
+| TAG projection/path guards | Pure bounded parser and output provenance checks | Specification 006: authoritative masked tags_all/tags, configured-key states and work limits; only validated configured-key paths reach reports. Rego owns aggregation. |
 | Analysis builder | `analysis.summarize(snapshot: ResourceSnapshot) -> PlanAnalysis` | Implemented in A5: deterministic public identities, action/type/mode counts, managed changing count, and complete/partial status from coverage warnings. Revalidate internal contracts; omit masks and values. |
 | Policy catalog | `load_catalog() -> PolicyCatalog`; `catalog.select(ids)` | Implemented shared metadata source for applicability, selection and safe messages. Internal reason templates stay private. |
 | Policy listing | `await PolicyListingService.list_policies() -> PolicyList` | Specification 003: project public metadata from the same catalog without plan or OPA access; validate/bound output and sanitize failures. |
@@ -221,8 +252,9 @@ unsupported/invalid-input errors rather than guessed interpretations.
 | --- | --- |
 | `ResourceSnapshot` | `schema_version`, `source_kind="terraform_plan"`, source format version, resources, coverage warnings. Schema version is internal and distinct from Terraform's. |
 | `ResourceAnalysis` | Public `address`, `provider_name`, `resource_type`, `name`, `mode`, `module_address`, optional index/previous address, ordered `actions`, derived category, and source provenance. No attribute values or masks. |
-| `NormalizedResource` | Wraps `resource: ResourceAnalysis` with masks/uncertainty. Selected evaluation adds minimal `desired_state`/RDS association and/or `ssh_state` observations. Raw matching identifiers and network sources are discarded; analysis retains neither projection. |
-| `PolicyMetadata` | Strict per-ID versions/scopes for AWS-RDS-001 and AWS-SG-001, title, description, high severity, required paths, empty configuration requirements and internal reason templates. |
+| `NormalizedResource` | Wraps `resource: ResourceAnalysis` with private masks/uncertainty. Selected evaluation adds minimal RDS, S3, SSH and/or TAG observations. Raw matching identifiers, network sources and tag values are discarded; analysis retains no policy projection. |
+| `PolicyMetadata` | Strict per-ID versions/scopes for RDS, S3, SSH and TAG, high/medium severity as appropriate, required paths/configuration and internal reason templates. TAG consumes startup required_tag_keys; the other policies require no policy-specific setting. |
+| `EvaluationInput` | Internal schema 5, sorted selected IDs and minimal resource projections. TAG configuration is present only when selected; entries must match its exact keys and the OPA engine's operator snapshot. |
 | `PolicyList` / `ListedPolicy` | Versioned public metadata allowlist; excludes enabled flags, reason templates and configured values. Same catalog as evaluation. |
 | `CheckResult` | Policy ID, resource address, outcome (`pass/fail/indeterminate/not_applicable`), trusted reason code, and optional attribute path. No arbitrary evidence value or free-form plan-derived explanation. |
 | `EvaluationError` | Stable code, safe message, optional policy ID; never a violation. Examples: `OPA_NOT_FOUND`, `OPA_TIMEOUT`, `OPA_EXECUTION_ERROR`, `OPA_OUTPUT_INVALID`. |
@@ -258,8 +290,9 @@ attributes may be added to the internal projection when future policies require 
 - An otherwise valid plan may have no changes/resources. Omitted change fields
   are not automatically malformed, but a state envelope cannot be treated as an
   empty plan. No applicable checks means `not_applicable`, not `pass`.
-- Correlate S3 and RDS resources only through known values or supported direct
-  Terraform configuration references. Unresolved/computed associations remain
+- Correlate S3 and RDS resources only through known values with the context proof
+  required by each specification. Configuration references alone are dependencies,
+  not proofs of value equality. Unresolved/computed associations remain
   indeterminate. Do not interpret arbitrary HCL expressions or infer cloud state.
 
 HashiCorp documents ordered change actions and separate unknown/sensitive masks
@@ -280,7 +313,8 @@ in E1. No shell and no plan-controlled arguments. Fixed invocation:
 ```text
 <trusted-opa> eval --format=json --stdin-input --strict --strict-builtin-errors
   --timeout=5s --capabilities <packaged-capabilities>
-  --data <packaged-rds.rego> --data <packaged-catalog>
+  --data <packaged-rds.rego> --data <packaged-ssh.rego>
+  --data <packaged-tags.rego> --data <packaged-s3.rego> --data <packaged-catalog>
   data.cloud_governance.report
 ```
 
@@ -441,7 +475,7 @@ the public summary builder and async service with limits/admission/cleanup. All
 521 tests pass. A6 implements the MCP analysis tool and stdio; A7 adds the
 [hands-on client walkthrough](trying-analysis.md), saved report and
 [acceptance evidence](analysis-acceptance.md). Analysis and the first standalone RDS policy are
-complete; listing, expanded RDS and SSH coverage are implemented. Tags and S3 remain planned. See
+complete; listing, expanded RDS, SSH, TAG and S3 coverage are implemented. M5 acceptance consolidation remains planned. See
 [development setup](development.md). OPA 1.21.2 is selected and verified on macOS arm64; see
 [OPA setup](opa-setup.md) and [evaluation evidence](evaluation-acceptance.md). No publication is included in these increments, and no extra
 approval gate is imposed between later tested increments.

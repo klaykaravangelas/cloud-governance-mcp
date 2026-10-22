@@ -1,0 +1,198 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "complete": true,
+  "resource_changes": [
+    {
+      "address": "aws_db_instance.example",
+      "mode": "managed",
+      "type": "aws_db_instance",
+      "name": "example",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "storage_encrypted": true,
+          "identifier": "synthetic-database",
+          "tags_all": {
+            "Environment": "development",
+            "Owner": "example-team",
+            "Project": "governance-demo"
+          }
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_security_group.example",
+      "type": "aws_security_group",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "ingress": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": [
+                "0.0.0.0/0"
+              ]
+            }
+          ],
+          "tags_all": {
+            "Environment": "development",
+            "Owner": "example-team",
+            "Project": "governance-demo"
+          }
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket.example",
+      "type": "aws_s3_bucket",
+      "name": "example",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-governance-bucket",
+          "tags_all": {
+            "Environment": "dev",
+            "Owner": "platform",
+            "Project": "governance"
+          }
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_public_access_block.protection",
+      "type": "aws_s3_bucket_public_access_block",
+      "name": "protection",
+      "mode": "managed",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "bucket": "example-governance-bucket",
+          "block_public_acls": true,
+          "ignore_public_acls": true,
+          "block_public_policy": true,
+          "restrict_public_buckets": true
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_db_instance.example",
+          "mode": "managed",
+          "type": "aws_db_instance",
+          "name": "example",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "storage_encrypted": true,
+            "identifier": "synthetic-database",
+            "tags_all": {
+              "Environment": "development",
+              "Owner": "example-team",
+              "Project": "governance-demo"
+            }
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_security_group.example",
+          "type": "aws_security_group",
+          "name": "example",
+          "mode": "managed",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "ingress": [
+              {
+                "protocol": "tcp",
+                "from_port": 22,
+                "to_port": 22,
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            ],
+            "tags_all": {
+              "Environment": "development",
+              "Owner": "example-team",
+              "Project": "governance-demo"
+            }
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket.example",
+          "type": "aws_s3_bucket",
+          "name": "example",
+          "mode": "managed",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "ingress": [
+              {
+                "protocol": "tcp",
+                "from_port": 22,
+                "to_port": 22,
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            ],
+            "tags_all": {
+              "Environment": "development",
+              "Owner": "example-team",
+              "Project": "governance-demo"
+            }
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  },
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.example",
+          "type": "aws_s3_bucket",
+          "name": "example",
+          "mode": "managed",
+          "provider_config_key": "aws"
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.protection",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "protection",
+          "mode": "managed",
+          "provider_config_key": "aws"
+        }
+      ]
+    }
+  }
+}

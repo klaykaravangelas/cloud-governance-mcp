@@ -18,6 +18,7 @@ from cloud_governance_mcp.policy_definitions import (
     RDS_RESOURCE_TYPES as RDS_RESOURCE_TYPES,
 )
 from cloud_governance_mcp.policy_definitions import RESOURCE_TYPES
+from cloud_governance_mcp.tag_models import DEFAULT_TAG_KEYS, TagConfiguration
 
 
 def attribute_state(
@@ -96,11 +97,16 @@ def project_desired(
 
 
 def to_evaluation_input(
-    snapshot: ResourceSnapshot, policy_ids: list[str]
+    snapshot: ResourceSnapshot,
+    policy_ids: list[str],
+    required_tag_keys: tuple[str, ...] = DEFAULT_TAG_KEYS,
 ) -> EvaluationInput:
     """Expose identities and fixed projection states, never masks or raw plans."""
     return EvaluationInput(
         selected_policy_ids=sorted(policy_ids),
+        tag_configuration=TagConfiguration(required_tag_keys=list(required_tag_keys))
+        if "AWS-TAG-001" in policy_ids
+        else None,
         resources=[
             ProjectedResource(
                 address=item.resource.address,
@@ -108,7 +114,9 @@ def to_evaluation_input(
                 resource_type=item.resource.resource_type,
                 mode=item.resource.mode,
                 action_category=item.resource.action_category,
+                s3_state=item.s3_state,
                 ssh_state=item.ssh_state,
+                tag_state=item.tag_state,
                 desired_state=item.desired_state
                 or DesiredStateProjection(
                     scope="unavailable",

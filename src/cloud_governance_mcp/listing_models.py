@@ -24,16 +24,16 @@ def validate_listing_input(value: object) -> ListPoliciesInput:
 class ListedPolicy(ContractModel):
     """Public allowlist of metadata; reason templates and local settings stay out."""
 
-    policy_id: Literal["AWS-RDS-001", "AWS-SG-001"]
+    policy_id: Literal["AWS-RDS-001", "AWS-S3-001", "AWS-SG-001", "AWS-TAG-001"]
     policy_version: Literal["1.1.0", "1.0.0"]
     title: IdentityText
     description: IdentityText
-    severity: Literal["high"]
+    severity: Literal["high", "medium"]
     supported_provider_names: list[IdentityText] = Field(min_length=1, max_length=1)
-    supported_resource_types: list[IdentityText] = Field(min_length=3, max_length=3)
+    supported_resource_types: list[IdentityText] = Field(min_length=2, max_length=5)
     required_paths: list[AttributePath]
     scope_description: IdentityText
-    required_configuration: list[IdentityText] = Field(max_length=0)
+    required_configuration: list[IdentityText] = Field(max_length=1)
 
     @model_validator(mode="after")
     def implemented_metadata(self) -> Self:
@@ -45,6 +45,7 @@ class ListedPolicy(ContractModel):
             self.supported_resource_types,
             self.required_paths,
             self.required_configuration,
+            self.severity,
         )
         return self
 
@@ -53,7 +54,7 @@ class PolicyList(ContractModel):
     """Versioned deterministic listing of the currently implemented policy set."""
 
     schema_version: Literal["1"] = "1"
-    policies: list[ListedPolicy] = Field(min_length=2, max_length=2)
+    policies: list[ListedPolicy] = Field(min_length=4, max_length=4)
 
     @model_validator(mode="after")
     def ordered_unique_policies(self) -> Self:

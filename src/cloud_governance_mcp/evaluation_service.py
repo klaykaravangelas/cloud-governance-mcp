@@ -99,6 +99,8 @@ class EvaluationService:
     ) -> None:
         self._settings = validate_analysis_settings(settings)
         self._evaluation_settings = validate_evaluation_settings(evaluation_settings)
+        # Snapshot validated keys so outside mutation cannot alter a later call.
+        self._required_tag_keys = tuple(self._evaluation_settings.required_tag_keys)
         self._loader = loader
         self._engine = (
             engine if engine is not None else OpaEngine(self._evaluation_settings)
@@ -116,8 +118,14 @@ class EvaluationService:
         """Resolve selection before file I/O, then load/normalize exactly once."""
         catalog = load_catalog()
         catalog.select(ids)
-        snapshot = self._adapter.normalize(self._loader.read_plan(path), ids)
-        return snapshot, catalog, to_evaluation_input(snapshot, ids)
+        snapshot = self._adapter.normalize(
+            self._loader.read_plan(path), ids, self._required_tag_keys
+        )
+        return (
+            snapshot,
+            catalog,
+            to_evaluation_input(snapshot, ids, self._required_tag_keys),
+        )
 
     def _report(
         self,

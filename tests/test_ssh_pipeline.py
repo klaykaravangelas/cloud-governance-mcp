@@ -87,7 +87,7 @@ def test_engine_schema_rejects_malformed_or_out_of_scope_projections(ssh_plan, d
 )
 def test_catalog_guards_each_policy_not_just_total_counts(defect):
     p = load_catalog().model_dump()
-    ssh = p["policies"][1]
+    ssh = next(p for p in p["policies"] if p["policy_id"] == "AWS-SG-001")
     if defect == "version":
         ssh["policy_version"] = "1.1.0"
     elif defect == "type":
@@ -107,7 +107,12 @@ def test_catalog_guards_each_policy_not_just_total_counts(defect):
 
 
 def test_selection_defaults_and_reverse_order_are_canonical():
-    assert validate_evaluation_input({"plan_path": "x"}).policy_ids == IDS
+    assert validate_evaluation_input({"plan_path": "x"}).policy_ids == [
+        "AWS-RDS-001",
+        "AWS-S3-001",
+        "AWS-SG-001",
+        "AWS-TAG-001",
+    ]
     assert (
         validate_evaluation_input(
             {"plan_path": "x", "policy_ids": list(reversed(IDS))}
@@ -128,7 +133,11 @@ def test_complete_but_wrong_reason_batches_fail_atomically(ssh_plan, code):
     plan = ssh_plan()
     plan["resource_changes"][0]["change"]["after_sensitive"] = True
     p = request(plan, ["AWS-SG-001"])
-    template = load_catalog().policies[0 if code.startswith("RDS") else 1].reasons[code]
+    template = next(
+        p
+        for p in load_catalog().policies
+        if p.policy_id == ("AWS-RDS-001" if code.startswith("RDS") else "AWS-SG-001")
+    ).reasons[code]
     with pytest.raises(EvaluationFailure, match="OPA_OUTPUT_INVALID"):
         validate_checks(
             {

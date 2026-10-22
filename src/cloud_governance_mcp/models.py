@@ -17,7 +17,9 @@ from pydantic import (
 
 from cloud_governance_mcp.contracts import ContractModel as ContractModel
 from cloud_governance_mcp.errors import AnalysisError, ErrorCode
+from cloud_governance_mcp.s3_models import S3Projection
 from cloud_governance_mcp.ssh_models import SSHProjection
+from cloud_governance_mcp.tag_models import TagProjection
 
 
 def _safe_text(value: str) -> str:
@@ -288,6 +290,8 @@ class NormalizedResource(ContractModel):
     unknown_metadata_complete: bool
     desired_state: DesiredStateProjection | None = Field(default=None, repr=False)
     ssh_state: SSHProjection | None = Field(default=None, repr=False)
+    tag_state: TagProjection | None = Field(default=None, repr=False)
+    s3_state: S3Projection | None = Field(default=None, repr=False)
 
     @model_validator(mode="after")
     def inventory_uncertainty(self) -> Self:

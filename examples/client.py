@@ -27,11 +27,15 @@ async def run_client(
     opa_path: Path | None = None,
     policy_ids: list[str] | None = None,
     list_policies: bool = False,
+    required_tag_keys: list[str] | None = None,
 ) -> int:
     """Discover tools or call governance tools; display only public results."""
     arguments = ["-I", "-m", "cloud_governance_mcp", "--allowed-root", str(root)]
     if opa_path is not None:
         arguments.extend(["--opa-path", str(opa_path.resolve())])
+    for key in required_tag_keys or []:
+        # An allowed key may start with '--'; '=' keeps it a literal value.
+        arguments.append("--required-tag-key=" + key)
     parameters = StdioServerParameters(
         command=sys.executable,
         args=arguments,
@@ -106,6 +110,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Select an implemented policy ID.",
     )
     parser.add_argument(
+        "--required-tag-key",
+        dest="required_tag_keys",
+        action="append",
+        help="Replace server required-tag defaults; repeat for each key.",
+    )
+    parser.add_argument(
         "--legacy", action="store_true", help="Use the legacy initialization handshake."
     )
     arguments = parser.parse_args(argv)
@@ -122,6 +132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 opa_path=arguments.opa_path,
                 policy_ids=arguments.policy_ids,
                 list_policies=arguments.list_policies,
+                required_tag_keys=arguments.required_tag_keys,
             )
         )
     except KeyboardInterrupt:

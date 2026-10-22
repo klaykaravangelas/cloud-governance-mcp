@@ -56,7 +56,9 @@ def build_report(
             resource_address=check.resource_address,
             resource_type=identities[check.resource_address].resource_type,
             reason_code=check.reason_code,
-            attribute_path=template.attribute_path,
+            attribute_path=check.attribute_path
+            if check.policy_id == "AWS-TAG-001"
+            else template.attribute_path,
             explanation=template.explanation,
             remediation=template.remediation,
         )

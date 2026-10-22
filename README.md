@@ -17,13 +17,15 @@ The v0.1 target has three complementary tools:
 | Tool | Purpose | Status |
 | --- | --- | --- |
 | `analyze_terraform_plan` | Explain proposed changes through resource identities, action/type/mode counts, and coverage warnings. | Implemented |
-| `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; RDS encryption (AWS-RDS-001 v1.1.0) and unrestricted SSH ingress (AWS-SG-001 v1.0.0) |
+| `evaluate_terraform_policies` | Evaluate a plan against governance rules and return structured findings with resource addresses, policy IDs, severity, and explanations. | Implemented; RDS encryption (AWS-RDS-001 v1.1.0), unrestricted SSH ingress (AWS-SG-001 v1.0.0) mandatory tags (AWS-TAG-001 v1.0.0), and S3 public-access protection (AWS-S3-001 v1.0.0) |
 | `list_policies` | Describe implemented governance policies, versions, severity, supported resources and configuration requirements. | Implemented; uses the shared evaluation catalog without OPA |
 
 RDS coverage includes standalone instances and clusters, with conservative
 encryption inheritance for cluster members. SSH coverage includes inline security
 group rules, legacy rules and modern ingress rules with direct world-wide sources.
-Mandatory resource tags and S3 public access protection remain planned.
+Mandatory tags check Environment, Owner and Project by default, with startup
+overrides for five supported resource types. S3 checks four bucket-level protection
+flags, with conservative bucket/block association; unresolved links stay indeterminate.
 
 Analysis explains changes; evaluation adds compliance decisions; policy
 listing describes the available rules. AWS connectivity is a later milestone.
@@ -33,7 +35,8 @@ listing describes the available rules. AWS connectivity is a later milestone.
 Terraform plan analysis is available locally over stdio. The first analysis
 increment (A1–A7) is complete, with real MCP client/server tests, synthetic plans,
 and a hands-on walkthrough. Package version is `0.1.0.dev0`; all three tools are
-available, while the full v0.1 policy coverage remains in progress. Evaluation
+available, with all four initial policy families implemented. Complete v0.1
+acceptance consolidation remains the next milestone. Evaluation
 uses pinned OPA 1.21.2. All tools operate locally without AWS credentials or
 Terraform. Analysis and policy listing need no OPA configuration or installation.
 
@@ -45,8 +48,17 @@ inferred. See the [cluster walkthrough](docs/trying-rds-clusters.md) and
 
 [Specification 005](docs/specifications/unrestricted-ssh-ingress.md) implements
 unrestricted SSH ingress and evaluation of two bundled policies. Omitting
-`policy_ids` selects both; select either ID for a narrower check. See the
+`policy_ids` selected both at that checkpoint; explicit selection preserves that scope. See the
 [SSH walkthrough](docs/trying-ssh.md) and [verification record](docs/ssh-acceptance.md).
+
+[Specification 006](docs/specifications/mandatory-resource-tags.md) implements
+mandatory resource tags, starting with `Environment`, `Owner` and `Project`.
+At this checkpoint, omission selected three policies. See the
+[tag walkthrough](docs/trying-tags.md) and [acceptance record](docs/tags-acceptance.md).
+
+[Specification 007](docs/specifications/s3-public-access-protection.md) implements
+S3 public-access protection. Omission now selects all four policies. Follow the
+[S3 walkthrough](docs/trying-s3.md) and [acceptance record](docs/s3-acceptance.md).
 
 ## Try the analysis tool locally
 
@@ -93,9 +105,9 @@ three failed checks, with member remediation pointing to cluster encryption.
 passing cluster and two indeterminate members. New-resource plans commonly have
 unknown ARNs, so this last case is an expected limitation.
 
-For both policies, try `--evaluate --plan-path mixed_rds_ssh.json` with the same
-OPA path and no `--policy-id`. The three-resource plan produces six checks: one
-pass, one SSH failure and four not-applicable checks. Uncertain network values
+For all four policies, try `--evaluate --plan-path mixed_all_policies.json` with
+the same OPA path and no `--policy-id`. The four-resource plan produces 16
+checks: six passes, one SSH failure and nine not-applicable checks. Uncertain network values
 remain indeterminate unless another known predicate resolves the rule. This is
 plan-based direct exposure checking; it does not inspect effective AWS reachability.
 
@@ -105,8 +117,9 @@ plan-based direct exposure checking; it does not inspect effective AWS reachabil
 uv run --locked --no-editable python examples/client.py --list-policies
 ```
 
-This returns AWS-RDS-001 and AWS-SG-001 metadata from the same catalog used by evaluation,
-including supported resource types and empty policy configuration requirements.
+This returns AWS-RDS-001, AWS-S3-001, AWS-SG-001 and AWS-TAG-001 metadata from the same catalog used by evaluation,
+including supported types, severity and configuration requirements. TAG consumes
+required_tag_keys with startup defaults; RDS/S3/SSH have no policy-specific settings.
 It reads no plan and invokes no OPA process. Compare the
 [saved response](examples/reports/policy-list.json) or follow the
 [listing walkthrough](docs/trying-listing.md). `--list-tools` discovers MCP
@@ -157,7 +170,7 @@ observed local macOS editable-import issue. See [development notes](docs/develop
 
 Install the pinned OPA runtime for the full suite, which includes real policy
 tests. The documented [analysis-only command](docs/trying-evaluation.md#5-verify-locally)
-works without it. Current verification: **1,009 Python tests and 29 Rego tests pass**.
+works without it. Current verification: **1,184 Python tests and 37 Rego tests pass**.
 
 ```sh
 uv run --locked --no-editable pytest
@@ -198,10 +211,13 @@ Future capabilities are not included in the current server. See the
 - [Specification 003: policy listing](docs/specifications/list-policies.md)
 - [Specification 004: expanded RDS coverage](docs/specifications/expanded-rds-encryption.md)
 - [Specification 005: unrestricted SSH ingress](docs/specifications/unrestricted-ssh-ingress.md)
+- [Specification 006: mandatory resource tags](docs/specifications/mandatory-resource-tags.md)
 - [Cluster encryption walkthrough](docs/trying-rds-clusters.md)
 - [Expanded RDS acceptance evidence](docs/rds-acceptance.md)
 - [SSH ingress walkthrough](docs/trying-ssh.md)
 - [SSH ingress acceptance evidence](docs/ssh-acceptance.md)
+- [Mandatory tags walkthrough](docs/trying-tags.md)
+- [Mandatory tags acceptance evidence](docs/tags-acceptance.md)
 - [Policy listing walkthrough](docs/trying-listing.md)
 - [Policy listing acceptance evidence](docs/listing-acceptance.md)
 - [Evaluation walkthrough](docs/trying-evaluation.md)
